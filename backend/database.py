@@ -12,10 +12,12 @@ class Database:
     self.username = os.getenv("DATABASE_USER")
     self.password = os.getenv("DATABASE_PASS")
     self.url = f"mysql+pymysql://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}"
+
+    self.engine = db.create_engine(self.url)
+    self.session_factory = sessionmaker(bind=self.engine)
   
   def get_session(self):
-    engine = db.create_engine(self.url)
-    session = sessionmaker(bind=engine)()
+    session = self.session_factory()
     try:
       yield session
     finally:

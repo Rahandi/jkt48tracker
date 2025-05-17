@@ -7,10 +7,6 @@ from routes.routes import router
 
 load_dotenv()
 
-logging.getLogger("uvicorn.error").setLevel(logging.DEBUG)
-logging.getLogger("uvicorn.access").setLevel(logging.DEBUG)
-logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
-
 app = FastAPI(
   debug=True,
 )
