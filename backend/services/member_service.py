@@ -1,8 +1,7 @@
-from fastapi import Depends
-from sqlalchemy.orm import Session
-
 from database import get_session
+from fastapi import Depends
 from repositories.member_repository import MemberRepository
+from sqlalchemy.orm import Session
 
 
 class MemberService:

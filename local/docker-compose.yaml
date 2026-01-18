@@ -1,6 +1,7 @@
 services:
   backend:
-    image: test:1
+    image: jkt48tracker-backend:1
+    build: ../backend
     container_name: backend
     depends_on:
       tool-migrate:
@@ -32,9 +33,10 @@ services:
       timeout: 5s
       retries: 3
 
-  tool-migrate:
-    image: test:1
-    container_name: tool-migrate
+  backend-db-migrate:
+    image: jkt48tracker-backend:1
+    build: ../backend
+    container_name: backend-db-migrate
     depends_on:
       database:
         condition: service_healthy

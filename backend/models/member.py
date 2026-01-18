@@ -14,6 +14,7 @@ class Member(Base):
   horoscope = Column(String(20), nullable=False)
   twitter = Column(String(50), nullable=False)
   instagram = Column(String(50), nullable=False)
+  jkt48_id = Column(String(20), nullable=False)
 
   def __repr__(self):
     return f"id: {self.id}, name: {self.name}"
