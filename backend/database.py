@@ -11,9 +11,12 @@ class Database:
     self.name = os.getenv("DATABASE_NAME")
     self.username = os.getenv("DATABASE_USER")
     self.password = os.getenv("DATABASE_PASS")
-    self.url = f"mysql+pymysql://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}"
+    if self.host:
+      self.url = f"mysql+pymysql://{self.username}:{self.password}@{self.host}:{self.port}/{self.name}"
+    else:
+      self.url = "sqlite:///./jkt48tracker.db"
 
-    self.engine = db.create_engine(self.url)
+    self.engine = db.create_engine(self.url, connect_args={"check_same_thread": False} if not self.host else {})
     self.session_factory = sessionmaker(bind=self.engine)
   
   def get_session(self):
