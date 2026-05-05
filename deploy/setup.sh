@@ -5,8 +5,6 @@
 
 set -euo pipefail
 
-GAR_LOCATION="${GAR_LOCATION:-asia-southeast1}"
-
 echo "==> Installing Docker"
 sudo apt-get update -y
 sudo apt-get install -y ca-certificates curl gnupg lsb-release
@@ -25,10 +23,6 @@ sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plug
 sudo usermod -aG docker "$USER"
 echo "NOTE: log out and back in (or run 'newgrp docker') for the docker group to take effect."
 
-echo "==> Configuring Docker credential helper for Artifact Registry"
-# This uses the VM's attached service account — no key file needed.
-gcloud auth configure-docker "${GAR_LOCATION}-docker.pkg.dev" --quiet
-
 echo "==> Creating app directory"
 sudo mkdir -p /opt/jkt48tracker
 sudo chown "$USER":"$USER" /opt/jkt48tracker
@@ -44,5 +38,5 @@ fi
 echo ""
 echo "Setup complete. Next steps:"
 echo "  1. Fill in /opt/jkt48tracker/.env"
-echo "  2. Ensure the VM service account has roles/artifactregistry.reader"
+echo "  2. Add GitHub secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN, GCE_HOST, GCE_USER, GCE_SSH_PRIVATE_KEY"
 echo "  3. Push to main to trigger the first deployment"

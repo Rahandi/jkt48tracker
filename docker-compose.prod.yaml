@@ -17,7 +17,7 @@ services:
 
   # ── Frontend ─────────────────────────────────────────────────────────────────
   frontend:
-    image: ${GAR_REGISTRY}/frontend:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY}-frontend:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       - BACKEND_URL=http://backend:8000
@@ -26,7 +26,7 @@ services:
 
   # ── Backend ──────────────────────────────────────────────────────────────────
   backend:
-    image: ${GAR_REGISTRY}/backend:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY}-backend:${IMAGE_TAG:-latest}
     restart: unless-stopped
     depends_on:
       backend-db-migrate:
@@ -59,7 +59,7 @@ services:
 
   # ── DB migration (runs once per deploy, exits on success) ────────────────────
   backend-db-migrate:
-    image: ${GAR_REGISTRY}/backend:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY}-backend:${IMAGE_TAG:-latest}
     restart: "no"
     depends_on:
       database:
@@ -74,7 +74,7 @@ services:
 
   # ── Scraper tools (run manually: docker compose --profile sync up) ───────────
   tool-member-sync:
-    image: ${GAR_REGISTRY}/tool:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY}-tool:${IMAGE_TAG:-latest}
     profiles: ["sync"]
     depends_on:
       - backend
@@ -84,7 +84,7 @@ services:
       - SCRAPER_HEADLESS=true
 
   tool-theater-sync:
-    image: ${GAR_REGISTRY}/tool:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY}-tool:${IMAGE_TAG:-latest}
     profiles: ["sync"]
     depends_on:
       - backend
