@@ -1,10 +1,11 @@
 services:
   backend:
-    image: jkt48tracker-backend:1
+    image: jkt48tracker-backend:latest
     build: ../backend
     container_name: backend
+    restart: unless-stopped
     depends_on:
-      tool-migrate:
+      backend-db-migrate:
         condition: service_completed_successfully
     ports:
       - 8000:8000
@@ -14,10 +15,12 @@ services:
       - DATABASE_NAME=jkt48tracker
       - DATABASE_USER=jkt48tracker
       - DATABASE_PASS=jkt48tracker
-    
+      - INTERNAL_API_KEY=dev-internal-key
+
   database:
     image: mysql:9.3.0
     container_name: database
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: jkt48tracker
@@ -34,7 +37,7 @@ services:
       retries: 3
 
   backend-db-migrate:
-    image: jkt48tracker-backend:1
+    image: jkt48tracker-backend:latest
     build: ../backend
     container_name: backend-db-migrate
     depends_on:
@@ -47,3 +50,15 @@ services:
       - DATABASE_NAME=jkt48tracker
       - DATABASE_USER=jkt48tracker
       - DATABASE_PASS=jkt48tracker
+
+  tool-member-sync:
+    image: jkt48tracker-tool:latest
+    build: ../tool
+    container_name: tool-member-sync
+    profiles: ["sync"]
+    depends_on:
+      - backend
+    environment:
+      - INTERNAL_API_URL=http://backend:8000/internal
+      - INTERNAL_API_KEY=dev-internal-key
+      - SCRAPER_HEADLESS=true
