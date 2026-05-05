@@ -62,3 +62,16 @@ services:
       - INTERNAL_API_URL=http://backend:8000/internal
       - INTERNAL_API_KEY=dev-internal-key
       - SCRAPER_HEADLESS=true
+
+  tool-theater-sync:
+    image: jkt48tracker-tool:latest
+    build: ../tool
+    container_name: tool-theater-sync
+    profiles: ["sync"]
+    depends_on:
+      - backend
+    environment:
+      - INTERNAL_API_URL=http://backend:8000/internal
+      - INTERNAL_API_KEY=dev-internal-key
+      - SCRAPER_HEADLESS=true
+    command: ["python", "theater.py"]

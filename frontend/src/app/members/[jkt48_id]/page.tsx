@@ -18,6 +18,16 @@ type Member = {
   instagram: string | null;
 };
 
+type ScheduleMember = { id: number; name: string; jkt48_id: string | null };
+
+type TheaterSchedule = {
+  id: number;
+  show_date: string | null;
+  show_time: string | null;
+  setlist_name: string | null;
+  members: ScheduleMember[];
+};
+
 async function getMember(jkt48_id: string): Promise<Member | null> {
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/members/${jkt48_id}`,
@@ -25,6 +35,14 @@ async function getMember(jkt48_id: string): Promise<Member | null> {
   );
   if (res.status === 404) return null;
   if (!res.ok) throw new Error("Failed to fetch member");
+  return res.json();
+}
+
+async function getAllSchedules(): Promise<TheaterSchedule[]> {
+  const res = await fetch(`${process.env.BACKEND_URL}/api/theater-schedules/`, {
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) return [];
   return res.json();
 }
 
@@ -44,16 +62,22 @@ export default async function MemberPage({
   params: Promise<{ jkt48_id: string }>;
 }) {
   const { jkt48_id } = await params;
-  const member = await getMember(jkt48_id);
+  const [member, allSchedules] = await Promise.all([
+    getMember(jkt48_id),
+    getAllSchedules(),
+  ]);
   if (!member) notFound();
 
   const age = calcAge(member.dob);
+  const upcomingShows = allSchedules.filter((s) =>
+    s.members.some((m) => m.jkt48_id === jkt48_id)
+  );
 
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-sm px-6 py-4 flex items-center gap-4">
         <Link
-          href="/"
+          href="/members"
           className="text-muted-foreground hover:text-foreground transition-colors text-sm flex items-center gap-1.5"
         >
           ← All Members
@@ -87,7 +111,9 @@ export default async function MemberPage({
           {/* Info */}
           <div className="flex-1 min-w-0">
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-foreground leading-tight">{member.name}</h1>
+              <h1 className="text-2xl font-bold text-foreground leading-tight">
+                {member.name}
+              </h1>
               {member.nickname && (
                 <p className="text-muted-foreground mt-1">"{member.nickname}"</p>
               )}
@@ -109,7 +135,9 @@ export default async function MemberPage({
                     <span>
                       {formatDate(member.dob)}
                       {age !== null && (
-                        <span className="text-muted-foreground ml-1">({age} years old)</span>
+                        <span className="text-muted-foreground ml-1">
+                          ({age} years old)
+                        </span>
                       )}
                     </span>
                   ) : null
@@ -124,6 +152,35 @@ export default async function MemberPage({
             </div>
           </div>
         </div>
+
+        {/* Upcoming Theater Shows */}
+        {upcomingShows.length > 0 && (
+          <div className="mt-10">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Upcoming Theater Shows
+            </h2>
+            <div className="flex flex-col gap-2">
+              {upcomingShows.map((s) => (
+                <Link
+                  key={s.id}
+                  href={`/theater/${s.id}`}
+                  className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl bg-card ring-1 ring-border hover:ring-primary/60 transition-all duration-200"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground text-sm truncate">
+                      {s.setlist_name ?? "TBA"}
+                    </p>
+                    <p className="text-muted-foreground text-xs mt-0.5">
+                      {s.show_date ? formatDate(s.show_date) : "Date TBA"}
+                      {s.show_time && <span className="ml-1.5">· {s.show_time} WIB</span>}
+                    </p>
+                  </div>
+                  <span className="text-muted-foreground text-sm shrink-0">→</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
