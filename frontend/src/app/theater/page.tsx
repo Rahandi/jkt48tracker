@@ -76,7 +76,7 @@ export default async function TheaterPage() {
           href="/"
           className="text-muted-foreground hover:text-foreground transition-colors text-sm"
         >
-          ← Members
+          ← Home
         </Link>
         <span className="text-border">|</span>
         <span className="text-primary font-bold text-sm">Theater Schedule</span>

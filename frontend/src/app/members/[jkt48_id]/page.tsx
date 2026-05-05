@@ -77,7 +77,7 @@ export default async function MemberPage({
     <div className="min-h-screen">
       <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-sm px-6 py-4 flex items-center gap-4">
         <Link
-          href="/"
+          href="/members"
           className="text-muted-foreground hover:text-foreground transition-colors text-sm flex items-center gap-1.5"
         >
           ← All Members
