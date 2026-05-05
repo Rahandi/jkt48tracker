@@ -8,11 +8,14 @@ class TheaterScheduleService:
   def __init__(self, db: Session = Depends(get_session)):
     self.repo = TheaterScheduleRepository(db)
 
-  def get_all(self):
-    return self.repo.get_all()
+  def get_all_with_members(self):
+    return self.repo.get_all_with_members()
 
-  def get_by_id(self, schedule_id: int):
-    return self.repo.get_by_id(schedule_id)
+  def get_detail(self, schedule_id: int):
+    return self.repo.get_detail(schedule_id)
+
+  def get_member_stats(self):
+    return self.repo.get_member_stats()
 
   def get_members(self, schedule_id: int):
     return self.repo.get_members(schedule_id)

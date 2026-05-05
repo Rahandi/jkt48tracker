@@ -31,7 +31,15 @@ export default async function HomePage() {
           <span className="text-primary font-bold text-xl">JKT48</span>
           <span className="text-foreground font-semibold text-xl">Tracker</span>
         </div>
-        <span className="text-muted-foreground text-sm">{members.length} members</span>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/theater"
+            className="text-muted-foreground hover:text-foreground transition-colors text-sm"
+          >
+            Theater
+          </Link>
+          <span className="text-muted-foreground text-sm">{members.length} members</span>
+        </div>
       </header>
 
       <main className="px-4 py-6 sm:px-6">
