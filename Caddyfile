@@ -1,0 +1,15 @@
+# DOMAIN defaults to ":80" (plain HTTP on all interfaces).
+# Set DOMAIN=yourdomain.com in .env for automatic HTTPS via Let's Encrypt.
+{$DOMAIN::80} {
+
+    # Backend API — proxied to FastAPI
+    @backend path /api/* /internal/*
+    handle @backend {
+        reverse_proxy backend:8000
+    }
+
+    # Everything else — proxied to Next.js
+    handle {
+        reverse_proxy frontend:3000
+    }
+}

@@ -1,0 +1,100 @@
+services:
+
+  # ── Reverse proxy ────────────────────────────────────────────────────────────
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+  # ── Frontend ─────────────────────────────────────────────────────────────────
+  frontend:
+    image: ${GAR_REGISTRY}/frontend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      - BACKEND_URL=http://backend:8000
+    depends_on:
+      - backend
+
+  # ── Backend ──────────────────────────────────────────────────────────────────
+  backend:
+    image: ${GAR_REGISTRY}/backend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      backend-db-migrate:
+        condition: service_completed_successfully
+    environment:
+      - DATABASE_HOST=database
+      - DATABASE_PORT=3306
+      - DATABASE_NAME=${DATABASE_NAME:-jkt48tracker}
+      - DATABASE_USER=${DATABASE_USER:-jkt48tracker}
+      - DATABASE_PASS=${DATABASE_PASS}
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+
+  # ── Database ─────────────────────────────────────────────────────────────────
+  database:
+    image: mysql:9.3.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASS}
+      MYSQL_DATABASE: ${DATABASE_NAME:-jkt48tracker}
+      MYSQL_USER: ${DATABASE_USER:-jkt48tracker}
+      MYSQL_PASSWORD: ${DATABASE_PASS}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── DB migration (runs once per deploy, exits on success) ────────────────────
+  backend-db-migrate:
+    image: ${GAR_REGISTRY}/backend:${IMAGE_TAG:-latest}
+    restart: "no"
+    depends_on:
+      database:
+        condition: service_healthy
+    entrypoint: ["alembic", "upgrade", "head"]
+    environment:
+      - DATABASE_HOST=database
+      - DATABASE_PORT=3306
+      - DATABASE_NAME=${DATABASE_NAME:-jkt48tracker}
+      - DATABASE_USER=${DATABASE_USER:-jkt48tracker}
+      - DATABASE_PASS=${DATABASE_PASS}
+
+  # ── Scraper tools (run manually: docker compose --profile sync up) ───────────
+  tool-member-sync:
+    image: ${GAR_REGISTRY}/tool:${IMAGE_TAG:-latest}
+    profiles: ["sync"]
+    depends_on:
+      - backend
+    environment:
+      - INTERNAL_API_URL=http://backend:8000/internal
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+      - SCRAPER_HEADLESS=true
+
+  tool-theater-sync:
+    image: ${GAR_REGISTRY}/tool:${IMAGE_TAG:-latest}
+    profiles: ["sync"]
+    depends_on:
+      - backend
+    environment:
+      - INTERNAL_API_URL=http://backend:8000/internal
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+      - SCRAPER_HEADLESS=true
+    command: ["python", "theater.py"]
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:

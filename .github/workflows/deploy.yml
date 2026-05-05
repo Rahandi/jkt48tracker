@@ -1,0 +1,127 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+
+# ── Shared config ──────────────────────────────────────────────────────────────
+env:
+  GAR_LOCATION: asia-southeast1          # change if your Artifact Registry is in a different region
+  GAR_REPOSITORY: jkt48tracker
+
+# ══════════════════════════════════════════════════════════════════════════════
+# JOB 1 — Build images and push to Google Artifact Registry
+# ══════════════════════════════════════════════════════════════════════════════
+jobs:
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Authenticate to GCP using the Service Account JSON stored in secrets.
+      # Required SA roles: roles/artifactregistry.writer
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker to use Artifact Registry
+        run: gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev --quiet
+
+      # Compute the full registry prefix once so it can be reused below
+      - name: Export GAR registry prefix
+        run: |
+          echo "GAR_REGISTRY=${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}" \
+            >> "$GITHUB_ENV"
+
+      # ── backend ──
+      - name: Build and push backend
+        run: |
+          docker build \
+            -t "$GAR_REGISTRY/backend:${{ github.sha }}" \
+            -t "$GAR_REGISTRY/backend:latest" \
+            ./backend
+          docker push --all-tags "$GAR_REGISTRY/backend"
+
+      # ── frontend ──
+      - name: Build and push frontend
+        run: |
+          docker build \
+            -t "$GAR_REGISTRY/frontend:${{ github.sha }}" \
+            -t "$GAR_REGISTRY/frontend:latest" \
+            ./frontend
+          docker push --all-tags "$GAR_REGISTRY/frontend"
+
+      # ── scraper tool ──
+      - name: Build and push tool
+        run: |
+          docker build \
+            -t "$GAR_REGISTRY/tool:${{ github.sha }}" \
+            -t "$GAR_REGISTRY/tool:latest" \
+            ./tool
+          docker push --all-tags "$GAR_REGISTRY/tool"
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # JOB 2 — Deploy to GCE
+  # ════════════════════════════════════════════════════════════════════════════
+  deploy:
+    name: Deploy to GCE
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Copy only the files the server needs (compose file + Caddyfile).
+      # Secrets stay in the .env file already on the server.
+      - name: Copy deployment files to GCE
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.GCE_HOST }}
+          username: ${{ secrets.GCE_USER }}
+          key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
+          source: "docker-compose.prod.yaml,Caddyfile"
+          target: /opt/jkt48tracker
+
+      - name: Deploy on GCE
+        uses: appleboy/ssh-action@v1
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          GAR_REGISTRY: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPOSITORY }}
+        with:
+          host: ${{ secrets.GCE_HOST }}
+          username: ${{ secrets.GCE_USER }}
+          key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
+          envs: IMAGE_TAG,GAR_REGISTRY
+          script: |
+            set -euo pipefail
+            cd /opt/jkt48tracker
+
+            # Stamp the deployed commit SHA into .env so docker compose picks it up
+            if grep -q '^IMAGE_TAG=' .env 2>/dev/null; then
+              sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${IMAGE_TAG}|" .env
+            else
+              echo "IMAGE_TAG=${IMAGE_TAG}" >> .env
+            fi
+
+            if grep -q '^GAR_REGISTRY=' .env 2>/dev/null; then
+              sed -i "s|^GAR_REGISTRY=.*|GAR_REGISTRY=${GAR_REGISTRY}|" .env
+            else
+              echo "GAR_REGISTRY=${GAR_REGISTRY}" >> .env
+            fi
+
+            # Pull new images from Artifact Registry
+            docker compose -f docker-compose.prod.yaml pull
+
+            # Recreate changed containers, leave database intact
+            docker compose -f docker-compose.prod.yaml up -d --remove-orphans
+
+            # Remove dangling images to free disk space
+            docker image prune -f
