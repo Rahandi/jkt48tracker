@@ -7,7 +7,7 @@ class TheaterScheduleMember(Base):
   __tablename__ = "theater_schedule_members"
 
   theater_schedule_id = Column(Integer, ForeignKey("theater_schedules.id"), nullable=False)
-  jkt48_id = Column(String(50), nullable=True)
+  jkt48_id = Column(String(100), nullable=True)
   name = Column(String(100), nullable=False)
 
   def __repr__(self):

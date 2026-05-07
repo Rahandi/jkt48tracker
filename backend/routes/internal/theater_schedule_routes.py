@@ -15,6 +15,7 @@ class TheaterScheduleSyncItem(BaseModel):
     show_date: str | None = None
     show_time: str | None = None
     setlist_name: str | None = None
+    seitansai_members: str | None = None
     members: list[TheaterScheduleMemberItem] = []
 
 

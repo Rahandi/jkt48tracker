@@ -1,18 +1,57 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from services.theater_schedule_service import TheaterScheduleService
 
 router = APIRouter(prefix="/theater-schedules", tags=["theater-schedules"])
 
 
+@router.get("/count")
+async def count_theater_schedules(
+    upcoming: bool = Query(False),
+    past: bool = Query(False),
+    team: str | None = Query(None),
+    setlist_name: str | None = Query(None),
+    service: TheaterScheduleService = Depends(),
+):
+    return {"count": service.count(upcoming=upcoming, past=past, team=team, setlist_name=setlist_name)}
+
+
 @router.get("/")
-async def list_theater_schedules(service: TheaterScheduleService = Depends()):
-    return service.get_all_with_members()
+async def list_theater_schedules(
+    upcoming: bool = Query(False),
+    past: bool = Query(False),
+    limit: int = Query(None),
+    offset: int = Query(0),
+    team: str | None = Query(None),
+    setlist_name: str | None = Query(None),
+    service: TheaterScheduleService = Depends(),
+):
+    return service.get_all_with_members(upcoming=upcoming, past=past, limit=limit, offset=offset, team=team, setlist_name=setlist_name)
 
 
 @router.get("/member-stats")
 async def get_member_stats(service: TheaterScheduleService = Depends()):
     return service.get_member_stats()
+
+
+@router.get("/stats/by-year")
+async def shows_by_year(service: TheaterScheduleService = Depends()):
+    return service.get_shows_by_year()
+
+
+@router.get("/stats/top-setlists")
+async def top_setlists(limit: int = Query(15), service: TheaterScheduleService = Depends()):
+    return service.get_top_setlists(limit)
+
+
+@router.get("/stats/setlists")
+async def all_setlists(service: TheaterScheduleService = Depends()):
+    return service.get_all_setlists()
+
+
+@router.get("/{schedule_id}/adjacent")
+async def get_adjacent_schedules(schedule_id: int, service: TheaterScheduleService = Depends()):
+    return service.get_adjacent(schedule_id)
 
 
 @router.get("/{schedule_id}")

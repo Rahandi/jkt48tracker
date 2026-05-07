@@ -3,6 +3,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, calcAge } from "@/lib/utils";
+import { ShowsByYearChart } from "@/components/charts/ShowsByYearChart";
+import { getTeamColor } from "@/lib/teamColors";
+
+const TEAM_LABEL: Record<string, string> = {
+  LOVE: "Team Love",
+  DREAM: "Team Dream",
+  PASSION: "Team Passion",
+  TRAINEE: "Trainee",
+  JKT48_VIRTUAL: "JKT48 Virtual",
+};
 
 type Member = {
   id: number;
@@ -16,6 +26,7 @@ type Member = {
   horoscope: string | null;
   twitter: string | null;
   instagram: string | null;
+  team: string | null;
 };
 
 type ScheduleMember = { id: number; name: string; jkt48_id: string | null };
@@ -38,12 +49,66 @@ async function getMember(jkt48_id: string): Promise<Member | null> {
   return res.json();
 }
 
-async function getAllSchedules(): Promise<TheaterSchedule[]> {
-  const res = await fetch(`${process.env.BACKEND_URL}/api/theater-schedules/`, {
-    next: { revalidate: 3600 },
-  });
+type TheaterStats = { total: number; by_year: { year: number; count: number }[] };
+
+type RecentShow = { id: number; show_date: string | null; show_time: string | null; setlist_name: string | null };
+
+async function getUpcomingSchedules(): Promise<TheaterSchedule[]> {
+  const res = await fetch(
+    `${process.env.BACKEND_URL}/api/theater-schedules/?upcoming=true`,
+    { next: { revalidate: 3600 } }
+  );
   if (!res.ok) return [];
   return res.json();
+}
+
+async function getMemberTheaterStats(jkt48_id: string): Promise<TheaterStats> {
+  const res = await fetch(
+    `${process.env.BACKEND_URL}/api/members/${jkt48_id}/theater-stats`,
+    { next: { revalidate: 3600 } }
+  );
+  if (!res.ok) return { total: 0, by_year: [] };
+  return res.json();
+}
+
+async function getRecentShows(jkt48_id: string): Promise<RecentShow[]> {
+  const res = await fetch(
+    `${process.env.BACKEND_URL}/api/members/${jkt48_id}/shows?limit=10`,
+    { next: { revalidate: 3600 } }
+  );
+  if (!res.ok) return [];
+  return res.json();
+}
+
+type MemberStat = { jkt48_id: string | null; name: string; show_count: number };
+async function getMemberStats(): Promise<MemberStat[]> {
+  const res = await fetch(
+    `${process.env.BACKEND_URL}/api/theater-schedules/member-stats`,
+    { next: { revalidate: 3600 } }
+  );
+  if (!res.ok) return [];
+  return res.json();
+}
+
+type ShowLinkItem = { id: number; show_date: string | null; show_time: string | null; setlist_name: string | null };
+function ShowLink({ s }: { s: ShowLinkItem }) {
+  return (
+    <Link
+      href={`/theater/${s.id}`}
+      className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl bg-card ring-1 ring-border hover:ring-primary/60 transition-all duration-200"
+    >
+      <div className="min-w-0">
+        <p className="font-medium text-foreground text-sm truncate">
+          {s.setlist_name ?? "TBA"}
+        </p>
+        <p className="text-muted-foreground text-xs mt-0.5">
+          {s.show_date ? formatDate(s.show_date) : "Date TBA"}
+          {s.show_time && <span className="ml-1.5">· {s.show_time} WIB</span>}
+        </p>
+      </div>
+      <span className="text-muted-foreground text-sm shrink-0">→</span>
+    </Link>
+  );
 }
 
 type StatRowProps = { label: string; value: React.ReactNode };
@@ -62,35 +127,39 @@ export default async function MemberPage({
   params: Promise<{ jkt48_id: string }>;
 }) {
   const { jkt48_id } = await params;
-  const [member, allSchedules] = await Promise.all([
+  const [member, upcomingSchedules, theaterStats, recentShows, allStats] = await Promise.all([
     getMember(jkt48_id),
-    getAllSchedules(),
+    getUpcomingSchedules(),
+    getMemberTheaterStats(jkt48_id),
+    getRecentShows(jkt48_id),
+    getMemberStats(),
   ]);
   if (!member) notFound();
 
   const age = calcAge(member.dob);
-  const upcomingShows = allSchedules.filter((s) =>
+  const upcomingShows = upcomingSchedules.filter((s) =>
     s.members.some((m) => m.jkt48_id === jkt48_id)
   );
 
+  const rank = allStats.findIndex((s) => s.jkt48_id === jkt48_id) + 1;
+  const teamColor = getTeamColor(member.team);
+
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/80 backdrop-blur-sm px-6 py-4 flex items-center gap-4">
+      <main className="px-4 py-8 sm:px-6 max-w-3xl mx-auto">
         <Link
           href="/members"
-          className="text-muted-foreground hover:text-foreground transition-colors text-sm flex items-center gap-1.5"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
         >
           ← All Members
         </Link>
-        <span className="text-border">|</span>
-        <span className="text-foreground font-medium text-sm">{member.name}</span>
-      </header>
-
-      <main className="px-4 py-8 sm:px-6 max-w-3xl mx-auto">
         <div className="flex flex-col sm:flex-row gap-8">
           {/* Photo */}
           <div className="shrink-0 mx-auto sm:mx-0">
-            <div className="w-52 rounded-2xl overflow-hidden bg-muted ring-1 ring-border">
+            <div
+              className="w-52 rounded-2xl overflow-hidden bg-muted ring-1 ring-border"
+              style={teamColor ? { boxShadow: `0 0 0 2px ${teamColor.hex}40` } : undefined}
+            >
               {member.image_url ? (
                 <Image
                   src={member.image_url}
@@ -117,12 +186,29 @@ export default async function MemberPage({
               {member.nickname && (
                 <p className="text-muted-foreground mt-1">"{member.nickname}"</p>
               )}
-              <div className="flex gap-2 mt-3 flex-wrap">
+              <div className="flex gap-2 mt-3 flex-wrap items-center">
+                {member.team && TEAM_LABEL[member.team] && (
+                  <span
+                    className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
+                    style={
+                      teamColor
+                        ? { backgroundColor: teamColor.bg, color: teamColor.text, border: `1px solid ${teamColor.hex}50` }
+                        : undefined
+                    }
+                  >
+                    {TEAM_LABEL[member.team]}
+                  </span>
+                )}
                 {member.blood_type && (
                   <Badge variant="outline">Blood Type {member.blood_type}</Badge>
                 )}
                 {member.horoscope && (
                   <Badge variant="secondary">{member.horoscope}</Badge>
+                )}
+                {rank > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    #{rank} by show count
+                  </span>
                 )}
               </div>
             </div>
@@ -147,11 +233,51 @@ export default async function MemberPage({
                 label="Height"
                 value={member.height ? `${member.height} cm` : null}
               />
-              <StatRow label="Blood Type" value={member.blood_type} />
-              <StatRow label="Horoscope" value={member.horoscope} />
+              {(member.twitter || member.instagram) && (
+                <div className="flex items-start gap-4 py-3">
+                  <span className="text-muted-foreground text-sm w-28 shrink-0">Social</span>
+                  <div className="flex gap-3">
+                    {member.twitter && (
+                      <a
+                        href={`https://twitter.com/${member.twitter}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline"
+                      >
+                        @{member.twitter}
+                      </a>
+                    )}
+                    {member.instagram && (
+                      <a
+                        href={`https://instagram.com/${member.instagram}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline"
+                      >
+                        IG: {member.instagram}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Theater stats chart */}
+        {theaterStats.by_year.length > 0 && (
+          <div className="mt-10">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Theater Shows per Year
+              </h2>
+              <span className="text-xs text-muted-foreground">
+                {theaterStats.total} total
+              </span>
+            </div>
+            <ShowsByYearChart data={theaterStats.by_year} />
+          </div>
+        )}
 
         {/* Upcoming Theater Shows */}
         {upcomingShows.length > 0 && (
@@ -161,22 +287,28 @@ export default async function MemberPage({
             </h2>
             <div className="flex flex-col gap-2">
               {upcomingShows.map((s) => (
-                <Link
-                  key={s.id}
-                  href={`/theater/${s.id}`}
-                  className="flex items-center justify-between gap-4 px-4 py-3 rounded-xl bg-card ring-1 ring-border hover:ring-primary/60 transition-all duration-200"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium text-foreground text-sm truncate">
-                      {s.setlist_name ?? "TBA"}
-                    </p>
-                    <p className="text-muted-foreground text-xs mt-0.5">
-                      {s.show_date ? formatDate(s.show_date) : "Date TBA"}
-                      {s.show_time && <span className="ml-1.5">· {s.show_time} WIB</span>}
-                    </p>
-                  </div>
-                  <span className="text-muted-foreground text-sm shrink-0">→</span>
-                </Link>
+                <ShowLink key={s.id} s={s} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Past Shows */}
+        {recentShows.length > 0 && (
+          <div className="mt-10">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Recent Shows
+              </h2>
+              {theaterStats.total > 10 && (
+                <span className="text-xs text-muted-foreground">
+                  Showing 10 of {theaterStats.total}
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col gap-2">
+              {recentShows.map((s) => (
+                <ShowLink key={s.id} s={s} />
               ))}
             </div>
           </div>

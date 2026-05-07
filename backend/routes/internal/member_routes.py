@@ -16,6 +16,7 @@ class MemberSyncItem(BaseModel):
     horoscope: str | None = None
     twitter: str | None = None
     instagram: str | None = None
+    team: str | None = None
 
 
 router = APIRouter(prefix="/members", tags=["internal-members"])

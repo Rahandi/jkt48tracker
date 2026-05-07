@@ -73,5 +73,7 @@ services:
     environment:
       - INTERNAL_API_URL=http://backend:8000/internal
       - INTERNAL_API_KEY=dev-internal-key
-      - SCRAPER_HEADLESS=true
+      - SYNC_START_YEAR=2011
+      - SYNC_START_MONTH=12
+      - SYNC_MONTHS_FORWARD=2
     command: ["python", "theater.py"]

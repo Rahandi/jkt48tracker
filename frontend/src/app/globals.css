@@ -1,25 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0c0c12;
-  --foreground: #f0f0f8;
-  --card: #13131c;
-  --card-foreground: #f0f0f8;
-  --primary: #e11d48;
+  /* JKT48 brand palette — light theme */
+  --background: #f7f3f4;
+  --foreground: #100608;
+  --card: #ffffff;
+  --card-foreground: #100608;
+  --primary: #e4002b;          /* JKT48 signature red */
   --primary-foreground: #ffffff;
-  --secondary: #1c1c2a;
-  --secondary-foreground: #b0b0c8;
-  --muted: #1c1c2a;
-  --muted-foreground: #6060a0;
-  --border: #24243a;
-  --input: #24243a;
-  --ring: #e11d48;
+  --secondary: #ede7e9;
+  --secondary-foreground: #4a2d32;
+  --muted: #ede7e9;
+  --muted-foreground: #7a5c62;
+  --border: #ddd0d3;
+  --input: #ddd0d3;
+  --ring: #e4002b;
   --radius: 0.5rem;
-  --destructive: #ef4444;
-  --accent: #1c1c2a;
-  --accent-foreground: #f0f0f8;
-  --popover: #13131c;
-  --popover-foreground: #f0f0f8;
+  --destructive: #dc2626;
+  --accent: #ede7e9;
+  --accent-foreground: #100608;
+  --popover: #ffffff;
+  --popover-foreground: #100608;
 }
 
 @theme inline {
@@ -49,4 +50,13 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, sans-serif;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@utility animate-marquee {
+  animation: marquee 60s linear infinite;
 }
