@@ -165,14 +165,7 @@ export default async function TheaterShowPage({
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 mb-8">
           <div className="min-w-0">
             <h1 className="text-3xl font-bold text-foreground leading-tight">
-              {schedule.setlist_name ? (
-                <Link
-                  href={`/setlists/${encodeURIComponent(schedule.setlist_name)}`}
-                  className="hover:text-primary transition-colors"
-                >
-                  {schedule.setlist_name}
-                </Link>
-              ) : "TBA"}
+              {schedule.setlist_name ?? "TBA"}
             </h1>
             <p className="text-muted-foreground mt-2 text-base">
               {schedule.show_date ? formatDate(schedule.show_date) : "Date TBA"}
@@ -190,19 +183,29 @@ export default async function TheaterShowPage({
             )}
           </div>
 
-          <div className="flex gap-6 shrink-0">
-            <div className="text-center">
-              <p className="text-3xl font-bold text-foreground">{schedule.members.length}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Performers</p>
+          <div className="flex flex-col items-end gap-3 shrink-0">
+            <div className="flex gap-6">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-foreground">{schedule.members.length}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Performers</p>
+              </div>
+              {schedule.setlist_total_count != null && (
+                <>
+                  <div className="w-px bg-border" />
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-primary">{schedule.setlist_total_count}×</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Times performed</p>
+                  </div>
+                </>
+              )}
             </div>
-            {schedule.setlist_total_count != null && (
-              <>
-                <div className="w-px bg-border" />
-                <div className="text-center">
-                  <p className="text-3xl font-bold text-primary">{schedule.setlist_total_count}×</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Times performed</p>
-                </div>
-              </>
+            {schedule.setlist_name && (
+              <Link
+                href={`/setlists/${encodeURIComponent(schedule.setlist_name)}`}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium hover:bg-primary hover:text-white transition-colors"
+              >
+                View Setlist →
+              </Link>
             )}
           </div>
         </div>

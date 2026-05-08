@@ -113,39 +113,39 @@ function ShowCard({
             </span>
           </div>
 
-          {s.members.length > 0 && (
-            <div className="flex items-center mt-3 gap-2">
-              <div className="flex -space-x-2">
-                {s.members.slice(0, 8).map((m, i) => {
-                  const info = m.jkt48_id ? memberMap.get(m.jkt48_id) : undefined;
-                  return info?.image_url ? (
-                    <Image
-                      key={i}
-                      src={info.image_url}
-                      alt={m.name}
-                      width={28}
-                      height={28}
-                      className="w-7 h-7 rounded-full object-cover ring-2 ring-card"
-                    />
-                  ) : (
-                    <div
-                      key={i}
-                      className="w-7 h-7 rounded-full bg-muted ring-2 ring-card flex items-center justify-center"
-                    >
-                      <span className="text-[9px] text-muted-foreground font-semibold">
-                        {m.name[0]}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              {s.member_count > 8 && (
-                <span className="text-xs text-muted-foreground">
-                  +{s.member_count - 8} more
-                </span>
-              )}
+        {s.members.length > 0 && (
+          <div className="flex items-center mt-3 gap-2">
+            <div className="flex -space-x-2">
+              {s.members.slice(0, 8).map((m, i) => {
+                const info = m.jkt48_id ? memberMap.get(m.jkt48_id) : undefined;
+                return info?.image_url ? (
+                  <Image
+                    key={i}
+                    src={info.image_url}
+                    alt={m.name}
+                    width={28}
+                    height={28}
+                    className="w-7 h-7 rounded-full object-cover ring-2 ring-card"
+                  />
+                ) : (
+                  <div
+                    key={i}
+                    className="w-7 h-7 rounded-full bg-muted ring-2 ring-card flex items-center justify-center"
+                  >
+                    <span className="text-[9px] text-muted-foreground font-semibold">
+                      {m.name[0]}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-          )}
+            {s.member_count > 8 && (
+              <span className="text-xs text-muted-foreground">
+                +{s.member_count - 8} more
+              </span>
+            )}
+          </div>
+        )}
         </CardContent>
       </Card>
     </Link>
