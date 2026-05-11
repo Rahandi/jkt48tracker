@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { SetlistList } from "@/components/setlists/SetlistList";
 
 async function getSetlists(): Promise<{ setlist_name: string; count: number; first_date: string | null; last_date: string | null }[]> {

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { SongList, type SongEntry } from "@/components/songs/SongList";
 import tracklists from "@/data/setlist-tracklists.json";
 import idTitlesRaw from "@/data/song-id-titles.json";
