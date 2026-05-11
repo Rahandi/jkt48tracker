@@ -10,4 +10,5 @@ COPY . .
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["fastapi", "run", "main.py"]
+RUN chmod +x start.sh
+CMD ["sh", "start.sh"]

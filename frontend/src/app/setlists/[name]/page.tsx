@@ -4,6 +4,8 @@ import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
 import { getTeamColor, TEAM_COLORS } from "@/lib/teamColors";
+import tracklists from "@/data/setlist-tracklists.json";
+import idTitlesRaw from "@/data/song-id-titles.json";
 
 const TEAM_LABEL: Record<string, string> = {
   LOVE: "Team Love",
@@ -85,6 +87,15 @@ async function getMembers(): Promise<Member[]> {
   return res.json();
 }
 
+type TrackEntry = { track: string; name: string };
+type TracklistData = Record<string, { wiki_page: string; songs: TrackEntry[] }>;
+const idTitles = idTitlesRaw as Record<string, string | null>;
+
+function getTracklist(setlistName: string): TrackEntry[] | null {
+  const data = tracklists as TracklistData;
+  return data[setlistName]?.songs ?? null;
+}
+
 function deriveTeamCounts(shows: Show[], memberMap: Map<string, Member>) {
   const counts: Record<string, number> = {};
   for (const show of shows) {
@@ -123,6 +134,12 @@ export default async function SetlistDetailPage({
   const memberMap = new Map(members.map((m) => [m.jkt48_id, m]));
   const teamEntries = deriveTeamCounts(shows, memberMap);
   const totalPages = Math.ceil(info.count / PER_PAGE);
+  const rawTracklist = getTracklist(name);
+  const tracklist = rawTracklist?.filter(
+    (t) => !t.name.toLowerCase().includes("overture") && t.track !== "M00"
+  ) ?? null;
+  const mainSongs = tracklist?.filter((t) => t.track.startsWith("M")) ?? [];
+  const encoreSongs = tracklist?.filter((t) => t.track.startsWith("EN")) ?? [];
 
   // group past shows by year
   const byYear = shows.reduce<Record<string, Show[]>>((acc, s) => {
@@ -159,6 +176,58 @@ export default async function SetlistDetailPage({
             </div>
           </div>
         </div>
+
+        {/* Tracklist */}
+        {tracklist && tracklist.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Tracklist
+            </h2>
+            <Card>
+              <CardContent className="py-4 px-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+                  {mainSongs.map((t, i) => {
+                    const idTitle = idTitles[t.name] ?? null;
+                    return (
+                      <Link
+                        key={t.track}
+                        href={`/songs/${encodeURIComponent(t.name)}`}
+                        className="flex items-baseline gap-2 py-1 border-b border-border/40 last:border-0 hover:bg-secondary/40 rounded transition-colors group"
+                      >
+                        <span className="text-[10px] font-mono text-muted-foreground/60 w-10 shrink-0 text-right">
+                          M{String(i + 1).padStart(2, "0")}
+                        </span>
+                        <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                          {idTitle ? `${idTitle} (${t.name})` : t.name}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                  {encoreSongs.map((t, i) => {
+                    const idTitle = idTitles[t.name] ?? null;
+                    return (
+                      <Link
+                        key={t.track}
+                        href={`/songs/${encodeURIComponent(t.name)}`}
+                        className="flex items-baseline gap-2 py-1 border-b border-border/40 last:border-0 hover:bg-secondary/40 rounded transition-colors group"
+                      >
+                        <span className="text-[10px] font-mono text-primary/70 w-10 shrink-0 text-right">
+                          EN{String(i + 1).padStart(2, "0")}
+                        </span>
+                        <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                          {idTitle ? `${idTitle} (${t.name})` : t.name}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-muted-foreground/50 mt-3">
+                  Source: AKB48 Wiki
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Team breakdown */}
         {teamEntries.length > 0 && (

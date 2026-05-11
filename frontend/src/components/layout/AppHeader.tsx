@@ -10,6 +10,7 @@ export function AppHeader() {
     { href: "/members", label: "Members" },
     { href: "/theater", label: "Theater" },
     { href: "/setlists", label: "Setlists" },
+    { href: "/songs", label: "Songs" },
   ];
 
   return (
