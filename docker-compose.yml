@@ -24,6 +24,7 @@ services:
       DATABASE_NAME: ${DATABASE_NAME}
       DATABASE_USER: ${DATABASE_USER}
       DATABASE_PASS: ${DATABASE_PASS}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
     depends_on:
       mysql:
         condition: service_healthy
