@@ -51,6 +51,7 @@ services:
       WATCHTOWER_CLEANUP: true
       REPO_USER: ${GHCR_USER}
       REPO_PASS: ${GHCR_TOKEN}
+      DOCKER_API_VERSION: "1.41"
 
 volumes:
   mysql_data:
