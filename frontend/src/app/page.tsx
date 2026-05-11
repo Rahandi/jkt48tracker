@@ -39,6 +39,7 @@ type TheaterSchedule = {
 type MemberStat = { jkt48_id: string | null; name: string; show_count: number };
 
 async function getMembers(): Promise<Member[]> {
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(`${process.env.BACKEND_URL}/api/members/`, {
     next: { revalidate: 3600 },
   });
@@ -50,6 +51,7 @@ async function getSchedules(
   filter: "upcoming" | "past",
   limit?: number
 ): Promise<TheaterSchedule[]> {
+  if (!process.env.BACKEND_URL) return [];
   const params = new URLSearchParams({ [`${filter}`]: "true" });
   if (limit) params.set("limit", String(limit));
   const res = await fetch(
@@ -61,6 +63,7 @@ async function getSchedules(
 }
 
 async function getShowsByYear(): Promise<{ year: number; count: number }[]> {
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/stats/by-year`,
     { next: { revalidate: 3600 } }
@@ -70,6 +73,7 @@ async function getShowsByYear(): Promise<{ year: number; count: number }[]> {
 }
 
 async function getMemberStats(): Promise<MemberStat[]> {
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/member-stats`,
     { next: { revalidate: 3600 } }
@@ -79,6 +83,7 @@ async function getMemberStats(): Promise<MemberStat[]> {
 }
 
 async function getUpcomingBirthdays(): Promise<UpcomingBirthday[]> {
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/members/upcoming-birthdays?days=30`,
     { next: { revalidate: 3600 } }

@@ -48,6 +48,7 @@ async function getSchedules(opts: {
   if (opts.limit != null) params.set("limit", String(opts.limit));
   if (opts.offset) params.set("offset", String(opts.offset));
   if (opts.team) params.set("team", opts.team);
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/?${params}`,
     { cache: "no-store" }
@@ -57,6 +58,7 @@ async function getSchedules(opts: {
 }
 
 async function getScheduleCount(opts: { upcoming?: boolean; past?: boolean; team?: string }): Promise<number> {
+  if (!process.env.BACKEND_URL) return 0;
   const params = new URLSearchParams();
   if (opts.upcoming) params.set("upcoming", "true");
   if (opts.past) params.set("past", "true");
@@ -71,6 +73,7 @@ async function getScheduleCount(opts: { upcoming?: boolean; past?: boolean; team
 }
 
 async function getMembers(): Promise<Member[]> {
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(`${process.env.BACKEND_URL}/api/members/`, {
     next: { revalidate: 3600 },
   });
@@ -79,6 +82,7 @@ async function getMembers(): Promise<Member[]> {
 }
 
 async function getTopSetlists(): Promise<{ setlist_name: string; count: number }[]> {
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/stats/top-setlists`,
     { next: { revalidate: 3600 } }

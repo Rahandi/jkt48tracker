@@ -29,15 +29,17 @@ type Member = {
 type MemberStat = { jkt48_id: string | null; name: string; show_count: number };
 
 async function getMembers(team?: string): Promise<Member[]> {
+  if (!process.env.BACKEND_URL) return [];
   const params = team ? `?team=${team}` : "";
   const res = await fetch(`${process.env.BACKEND_URL}/api/members/${params}`, {
     next: { revalidate: 3600 },
   });
-  if (!res.ok) throw new Error("Failed to fetch members");
+  if (!res.ok) return [];
   return res.json();
 }
 
 async function getMemberStats(): Promise<MemberStat[]> {
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/member-stats`,
     { next: { revalidate: 3600 } }

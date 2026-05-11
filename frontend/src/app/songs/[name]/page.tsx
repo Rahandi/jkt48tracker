@@ -8,6 +8,7 @@ type TracklistData = Record<string, { wiki_page: string; songs: { track: string;
 type LyricsData = Record<string, { source: string; lyrics: string }>;
 
 async function getSetlistCounts(): Promise<Record<string, number>> {
+  if (!process.env.BACKEND_URL) return {};
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/stats/setlists`,
     { next: { revalidate: 3600 } }

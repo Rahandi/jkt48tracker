@@ -45,6 +45,7 @@ type Setlist = {
 };
 
 async function getSetlistInfo(name: string): Promise<Setlist | null> {
+  if (!process.env.BACKEND_URL) return null;
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/stats/setlists`,
     { next: { revalidate: 3600 } }
@@ -55,6 +56,7 @@ async function getSetlistInfo(name: string): Promise<Setlist | null> {
 }
 
 async function getShows(name: string, offset = 0): Promise<Show[]> {
+  if (!process.env.BACKEND_URL) return [];
   const params = new URLSearchParams({
     setlist_name: name,
     past: "true",
@@ -70,6 +72,7 @@ async function getShows(name: string, offset = 0): Promise<Show[]> {
 }
 
 async function getUpcomingShows(name: string): Promise<Show[]> {
+  if (!process.env.BACKEND_URL) return [];
   const params = new URLSearchParams({ setlist_name: name, upcoming: "true" });
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/?${params}`,
@@ -80,6 +83,7 @@ async function getUpcomingShows(name: string): Promise<Show[]> {
 }
 
 async function getMembers(): Promise<Member[]> {
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(`${process.env.BACKEND_URL}/api/members/`, {
     next: { revalidate: 3600 },
   });

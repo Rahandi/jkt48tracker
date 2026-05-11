@@ -1,6 +1,7 @@
 import { SetlistList } from "@/components/setlists/SetlistList";
 
 async function getSetlists(): Promise<{ setlist_name: string; count: number; first_date: string | null; last_date: string | null }[]> {
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/stats/setlists`,
     { next: { revalidate: 3600 } }

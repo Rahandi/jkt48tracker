@@ -43,6 +43,7 @@ type Adjacent = {
 };
 
 async function getSchedule(id: string): Promise<TheaterSchedule | null> {
+  if (!process.env.BACKEND_URL) return null;
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/${id}`,
     { next: { revalidate: 3600 } }
@@ -53,6 +54,7 @@ async function getSchedule(id: string): Promise<TheaterSchedule | null> {
 }
 
 async function getAdjacent(id: string): Promise<Adjacent> {
+  if (!process.env.BACKEND_URL) return { prev: null, next: null };
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/${id}/adjacent`,
     { next: { revalidate: 3600 } }
@@ -62,6 +64,7 @@ async function getAdjacent(id: string): Promise<Adjacent> {
 }
 
 async function getMembers(): Promise<Member[]> {
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(`${process.env.BACKEND_URL}/api/members/`, {
     next: { revalidate: 3600 },
   });
@@ -70,6 +73,7 @@ async function getMembers(): Promise<Member[]> {
 }
 
 async function getMemberStats(): Promise<MemberStat[]> {
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/member-stats`,
     { next: { revalidate: 3600 } }

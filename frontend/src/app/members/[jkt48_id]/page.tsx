@@ -40,6 +40,7 @@ type TheaterSchedule = {
 };
 
 async function getMember(jkt48_id: string): Promise<Member | null> {
+  if (!process.env.BACKEND_URL) return null;
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/members/${jkt48_id}`,
     { next: { revalidate: 3600 } }
@@ -54,6 +55,7 @@ type TheaterStats = { total: number; by_year: { year: number; count: number }[] 
 type RecentShow = { id: number; show_date: string | null; show_time: string | null; setlist_name: string | null };
 
 async function getUpcomingSchedules(): Promise<TheaterSchedule[]> {
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/?upcoming=true`,
     { next: { revalidate: 3600 } }
@@ -63,6 +65,7 @@ async function getUpcomingSchedules(): Promise<TheaterSchedule[]> {
 }
 
 async function getMemberTheaterStats(jkt48_id: string): Promise<TheaterStats> {
+  if (!process.env.BACKEND_URL) return { total: 0, by_year: [] };
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/members/${jkt48_id}/theater-stats`,
     { next: { revalidate: 3600 } }
@@ -72,6 +75,7 @@ async function getMemberTheaterStats(jkt48_id: string): Promise<TheaterStats> {
 }
 
 async function getRecentShows(jkt48_id: string): Promise<RecentShow[]> {
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/members/${jkt48_id}/shows?limit=10`,
     { next: { revalidate: 3600 } }
@@ -82,6 +86,7 @@ async function getRecentShows(jkt48_id: string): Promise<RecentShow[]> {
 
 type MemberStat = { jkt48_id: string | null; name: string; show_count: number };
 async function getMemberStats(): Promise<MemberStat[]> {
+  if (!process.env.BACKEND_URL) return [];
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/member-stats`,
     { next: { revalidate: 3600 } }

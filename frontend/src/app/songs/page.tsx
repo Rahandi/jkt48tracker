@@ -5,6 +5,7 @@ import idTitlesRaw from "@/data/song-id-titles.json";
 type TracklistData = Record<string, { wiki_page: string; songs: { track: string; name: string }[] }>;
 
 async function getSetlistCounts(): Promise<Record<string, number>> {
+  if (!process.env.BACKEND_URL) return {};
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/stats/setlists`,
     { next: { revalidate: 3600 } }
