@@ -22,8 +22,8 @@ MONTHS_FORWARD = int(os.getenv("SYNC_MONTHS_FORWARD", "2"))
 WIB = timezone(timedelta(hours=7))
 
 
-def _month_range() -> list[tuple[int, int]]:
-    start = date(DEFAULT_START_YEAR, DEFAULT_START_MONTH, 1)
+def _month_range(start_year: int = DEFAULT_START_YEAR, start_month: int = DEFAULT_START_MONTH) -> list[tuple[int, int]]:
+    start = date(start_year, start_month, 1)
     today = date.today()
     end_m = today.month + MONTHS_FORWARD
     end_y = today.year
@@ -120,8 +120,8 @@ def sync_members() -> None:
     print(f"Member sync: {post.json()['synced']} members updated (teams synced)")
 
 
-def run() -> None:
-    months = _month_range()
+def run(start_year: int = DEFAULT_START_YEAR, start_month: int = DEFAULT_START_MONTH) -> None:
+    months = _month_range(start_year, start_month)
     print(f"Fetching {len(months)} months ({months[0][0]}-{months[0][1]:02d} → {months[-1][0]}-{months[-1][1]:02d})...")
 
     all_items: list[dict] = []
@@ -199,7 +199,11 @@ def run() -> None:
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "sync-members":
+    args = sys.argv[1:]
+    if args and args[0] == "sync-members":
         sync_members()
+    elif args and args[0] == "from-today":
+        today = date.today()
+        run(start_year=today.year, start_month=today.month)
     else:
         run()
