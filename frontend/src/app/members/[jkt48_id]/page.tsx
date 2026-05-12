@@ -27,6 +27,7 @@ type Member = {
   twitter: string | null;
   instagram: string | null;
   team: string | null;
+  total_show_count: number | null;
 };
 
 type ScheduleMember = { id: number; name: string; jkt48_id: string | null };
@@ -276,17 +277,39 @@ export default async function MemberPage({
               <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Theater Shows per Year
               </h2>
-              <span className="text-xs text-muted-foreground">
-                {theaterStats.total} shows recorded
-              </span>
+              <div className="text-right">
+                {member.total_show_count != null ? (
+                  <>
+                    <span className="text-sm font-semibold text-foreground">
+                      {member.total_show_count} shows
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-1.5">
+                      ({theaterStats.total} tracked)
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    {theaterStats.total} shows tracked
+                  </span>
+                )}
+              </div>
             </div>
             <ShowsByYearChart data={theaterStats.by_year} />
-            <p className="text-xs text-muted-foreground mt-2">
-              * Some older shows are missing member records and are not counted here.{" "}
-              <a href="/contribute" className="underline underline-offset-2 hover:text-foreground transition-colors">
-                Help complete the data.
-              </a>
-            </p>
+            {member.total_show_count != null && theaterStats.total < member.total_show_count ? (
+              <p className="text-xs text-muted-foreground mt-2">
+                * {member.total_show_count - theaterStats.total} shows are missing member records and not reflected in the chart.{" "}
+                <a href="/contribute" className="underline underline-offset-2 hover:text-foreground transition-colors">
+                  Help complete the data.
+                </a>
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-2">
+                * Some older shows are missing member records and are not counted here.{" "}
+                <a href="/contribute" className="underline underline-offset-2 hover:text-foreground transition-colors">
+                  Help complete the data.
+                </a>
+              </p>
+            )}
           </div>
         )}
 
