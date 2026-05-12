@@ -132,6 +132,12 @@ export default async function MembersPage({
                 <MembersByShowCountChart data={activeStats} />
               </CardContent>
             </Card>
+            <p className="text-xs text-muted-foreground mt-2">
+              * Counts based on shows with recorded member data. Some older shows are missing records.{" "}
+              <a href="/contribute" className="underline underline-offset-2 hover:text-foreground transition-colors">
+                Help complete the data.
+              </a>
+            </p>
           </div>
         )}
 

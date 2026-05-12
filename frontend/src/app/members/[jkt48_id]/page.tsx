@@ -277,10 +277,16 @@ export default async function MemberPage({
                 Theater Shows per Year
               </h2>
               <span className="text-xs text-muted-foreground">
-                {theaterStats.total} total
+                {theaterStats.total} shows recorded
               </span>
             </div>
             <ShowsByYearChart data={theaterStats.by_year} />
+            <p className="text-xs text-muted-foreground mt-2">
+              * Some older shows are missing member records and are not counted here.{" "}
+              <a href="/contribute" className="underline underline-offset-2 hover:text-foreground transition-colors">
+                Help complete the data.
+              </a>
+            </p>
           </div>
         )}
 
