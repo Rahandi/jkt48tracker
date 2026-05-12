@@ -1,5 +1,6 @@
 """
-Syncs authoritative total show counts from fan tracker (@jehaes_, 2026-05-10) to the members table.
+Syncs official total show counts to the members table.
+Counts sourced from @jehaes_ (2026-05-10), recognized as the reference record by JKT48 members themselves.
 Matches by nickname (case-insensitive), falls back to manual jkt48_id map for names that differ.
 
 Run: python tool/sync_member_show_counts.py
@@ -14,8 +15,8 @@ BACKEND_URL = os.getenv("INTERNAL_API_URL", "http://localhost:8000/internal")
 API_KEY = os.getenv("INTERNAL_API_KEY", "")
 PUBLIC_URL = os.getenv("PUBLIC_API_URL", "http://localhost:8000/api")
 
-# Fan tracker data: {nickname_in_tweet: total_show_count}
-# Source: @jehaes_ on X (Twitter), 2026-05-10
+# Official show counts: {nickname: total_show_count}
+# Source: @jehaes_ on X (Twitter), 2026-05-10 — recognized by JKT48 members as the reference record
 FAN_TRACKER: dict[str, int] = {
     "Feni": 740,
     "Jessi": 456,

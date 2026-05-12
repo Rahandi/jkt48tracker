@@ -277,27 +277,14 @@ export default async function MemberPage({
               <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 Theater Shows per Year
               </h2>
-              <div className="text-right">
-                {member.total_show_count != null ? (
-                  <>
-                    <span className="text-sm font-semibold text-foreground">
-                      {member.total_show_count} shows
-                    </span>
-                    <span className="text-xs text-muted-foreground ml-1.5">
-                      ({theaterStats.total} tracked)
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-xs text-muted-foreground">
-                    {theaterStats.total} shows tracked
-                  </span>
-                )}
-              </div>
+              <span className="text-xs text-muted-foreground">
+                {member.total_show_count ?? theaterStats.total} shows
+              </span>
             </div>
             <ShowsByYearChart data={theaterStats.by_year} />
             {member.total_show_count != null && theaterStats.total < member.total_show_count ? (
               <p className="text-xs text-muted-foreground mt-2">
-                * {member.total_show_count - theaterStats.total} shows are missing member records and not reflected in the chart.{" "}
+                * {member.total_show_count - theaterStats.total} untracked shows are not reflected in the chart.{" "}
                 <a href="/contribute" className="underline underline-offset-2 hover:text-foreground transition-colors">
                   Help complete the data.
                 </a>
