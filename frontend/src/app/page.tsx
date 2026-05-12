@@ -333,7 +333,7 @@ export default async function HomePage() {
               </span>
               <span className="text-xs text-muted-foreground">next 30 days</span>
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-1 px-1 py-1 scrollbar-none">
+            <div className="flex gap-3 overflow-x-auto py-3 px-2 scrollbar-none">
               {upcomingBirthdays.map((b) => {
                 const color = getTeamColor(b.team);
                 const label = b.days_until === 0 ? "Today!" : b.days_until === 1 ? "Tomorrow" : `in ${b.days_until}d`;
@@ -344,18 +344,22 @@ export default async function HomePage() {
                     className="flex flex-col items-center gap-1.5 shrink-0 group"
                   >
                     <div
-                      className="relative w-12 h-12 rounded-full overflow-hidden transition-all group-hover:scale-105"
-                      style={{ outline: `2px solid ${color?.hex ?? "var(--border)"}`, outlineOffset: "2px" }}
+                      className="relative w-12 h-12 transition-transform duration-200 group-hover:scale-110"
+                      style={{
+                        outline: `2px solid ${color?.hex ?? "var(--border)"}`,
+                        outlineOffset: "2px",
+                        borderRadius: "50%",
+                      }}
                     >
                       {b.image_url ? (
-                        <Image src={b.image_url} alt={b.name} width={48} height={48} className="w-full h-full object-cover" />
+                        <Image src={b.image_url} alt={b.name} width={48} height={48} className="w-full h-full object-cover" style={{ clipPath: "circle(50%)" }} />
                       ) : (
-                        <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <div className="w-full h-full bg-muted flex items-center justify-center" style={{ clipPath: "circle(50%)" }}>
                           <span className="text-sm font-semibold text-muted-foreground">{b.name[0]}</span>
                         </div>
                       )}
                       {b.days_until === 0 && (
-                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center" style={{ clipPath: "circle(50%)" }}>
                           <span className="text-base">🎂</span>
                         </div>
                       )}

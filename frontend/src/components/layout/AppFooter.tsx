@@ -2,10 +2,6 @@ export function AppFooter() {
   return (
     <footer className="border-t border-border mt-12 px-6 py-8">
       <div className="max-w-7xl mx-auto flex flex-col gap-3 text-sm text-muted-foreground">
-        <p className="text-xs bg-secondary/60 border border-border rounded-lg px-3 py-2 text-muted-foreground">
-          <span className="font-semibold text-foreground">Data disclaimer:</span>{" "}
-          Theater schedule and member data may be incomplete or out of date. Historical show records are still being compiled.
-        </p>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>
             <span className="font-semibold text-foreground">JKT48 Tracker</span>
