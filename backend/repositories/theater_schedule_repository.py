@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import and_, delete, distinct, extract, func, insert, or_, select, update
+from sqlalchemy import and_, delete, distinct, exists, extract, func, insert, or_, select, update
 from sqlalchemy.orm import Session
 
 from models.member import Member
@@ -33,7 +33,7 @@ class TheaterScheduleRepository:
   def __init__(self, db: Session):
     self.db = db
 
-  def _base_statement(self, upcoming: bool = False, past: bool = False, team: str | None = None, setlist_name: str | None = None):
+  def _base_statement(self, upcoming: bool = False, past: bool = False, team: str | None = None, setlist_name: str | None = None, no_members: bool = False):
     stmt = select(TheaterSchedule).where(TheaterSchedule.deleted_at.is_(None))
     if setlist_name:
       stmt = stmt.where(TheaterSchedule.setlist_name == setlist_name)
@@ -45,6 +45,13 @@ class TheaterScheduleRepository:
         TheaterScheduleMember,
         TheaterScheduleMember.theater_schedule_id == TheaterSchedule.id,
       ).where(TheaterScheduleMember.jkt48_id.in_(member_ids)).distinct()
+    if no_members:
+      stmt = stmt.where(
+        ~exists().where(
+          TheaterScheduleMember.theater_schedule_id == TheaterSchedule.id,
+          TheaterScheduleMember.deleted_at.is_(None),
+        )
+      )
     if upcoming:
       stmt = stmt.where(TheaterSchedule.show_date >= date.today())
       stmt = stmt.order_by(TheaterSchedule.show_date.asc(), TheaterSchedule.show_time.asc())
@@ -55,21 +62,21 @@ class TheaterScheduleRepository:
       stmt = stmt.order_by(TheaterSchedule.show_date.desc(), TheaterSchedule.show_time.desc())
     return stmt
 
-  def get_all(self, upcoming: bool = False, past: bool = False, limit: int | None = None, offset: int = 0, team: str | None = None, setlist_name: str | None = None):
-    stmt = self._base_statement(upcoming=upcoming, past=past, team=team, setlist_name=setlist_name)
+  def get_all(self, upcoming: bool = False, past: bool = False, limit: int | None = None, offset: int = 0, team: str | None = None, setlist_name: str | None = None, no_members: bool = False):
+    stmt = self._base_statement(upcoming=upcoming, past=past, team=team, setlist_name=setlist_name, no_members=no_members)
     if offset:
       stmt = stmt.offset(offset)
     if limit is not None:
       stmt = stmt.limit(limit)
     return self.db.execute(stmt).scalars().all()
 
-  def count_all(self, upcoming: bool = False, past: bool = False, team: str | None = None, setlist_name: str | None = None) -> int:
-    base = self._base_statement(upcoming=upcoming, past=past, team=team, setlist_name=setlist_name)
+  def count_all(self, upcoming: bool = False, past: bool = False, team: str | None = None, setlist_name: str | None = None, no_members: bool = False) -> int:
+    base = self._base_statement(upcoming=upcoming, past=past, team=team, setlist_name=setlist_name, no_members=no_members)
     count_stmt = select(func.count()).select_from(base.subquery())
     return self.db.execute(count_stmt).scalar() or 0
 
-  def get_all_with_members(self, upcoming: bool = False, past: bool = False, limit: int | None = None, offset: int = 0, team: str | None = None, setlist_name: str | None = None) -> list[dict]:
-    schedules = self.get_all(upcoming=upcoming, past=past, limit=limit, offset=offset, team=team, setlist_name=setlist_name)
+  def get_all_with_members(self, upcoming: bool = False, past: bool = False, limit: int | None = None, offset: int = 0, team: str | None = None, setlist_name: str | None = None, no_members: bool = False) -> list[dict]:
+    schedules = self.get_all(upcoming=upcoming, past=past, limit=limit, offset=offset, team=team, setlist_name=setlist_name, no_members=no_members)
     return [_schedule_row(s, self.get_members(s.id)) for s in schedules]
 
   def get_all_setlists(self) -> list[dict]:

@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
 import { getTeamColor, TEAM_COLORS } from "@/lib/teamColors";
+import { ContributeShowMembers } from "@/components/theater/ContributeShowMembers";
+import { ContributeShowInfo } from "@/components/theater/ContributeShowInfo";
 
 const TEAM_LABEL: Record<string, string> = {
   LOVE: "Team Love",
@@ -185,6 +187,9 @@ export default async function TheaterShowPage({
                 </span>
               </div>
             )}
+            <div className="mt-3">
+              <ContributeShowInfo jkt48ScheduleId={schedule.jkt48_schedule_id} />
+            </div>
           </div>
 
           <div className="flex flex-col items-end gap-3 shrink-0">
@@ -273,7 +278,10 @@ export default async function TheaterShowPage({
           </h2>
 
           {schedule.members.length === 0 ? (
-            <p className="text-muted-foreground text-sm">Member list not available yet.</p>
+            <div>
+              <p className="text-muted-foreground text-sm">Member list not available for this show.</p>
+              <ContributeShowMembers jkt48ScheduleId={schedule.jkt48_schedule_id} />
+            </div>
           ) : (
             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
               {schedule.members.map((m) => {

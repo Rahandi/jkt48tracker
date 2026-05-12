@@ -11,9 +11,10 @@ async def count_theater_schedules(
     past: bool = Query(False),
     team: str | None = Query(None),
     setlist_name: str | None = Query(None),
+    no_members: bool = Query(False),
     service: TheaterScheduleService = Depends(),
 ):
-    return {"count": service.count(upcoming=upcoming, past=past, team=team, setlist_name=setlist_name)}
+    return {"count": service.count(upcoming=upcoming, past=past, team=team, setlist_name=setlist_name, no_members=no_members)}
 
 
 @router.get("/")
@@ -24,9 +25,10 @@ async def list_theater_schedules(
     offset: int = Query(0),
     team: str | None = Query(None),
     setlist_name: str | None = Query(None),
+    no_members: bool = Query(False),
     service: TheaterScheduleService = Depends(),
 ):
-    return service.get_all_with_members(upcoming=upcoming, past=past, limit=limit, offset=offset, team=team, setlist_name=setlist_name)
+    return service.get_all_with_members(upcoming=upcoming, past=past, limit=limit, offset=offset, team=team, setlist_name=setlist_name, no_members=no_members)
 
 
 @router.get("/member-stats")
