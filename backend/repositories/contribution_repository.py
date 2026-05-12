@@ -35,19 +35,22 @@ class ContributionRepository:
     return d
 
   def create(self, data: dict) -> dict:
-    jkt48_schedule_id = data["jkt48_schedule_id"]
-    show = self.db.execute(
-      select(TheaterSchedule).where(
-        TheaterSchedule.jkt48_schedule_id == jkt48_schedule_id,
-        TheaterSchedule.deleted_at.is_(None),
-      )
-    ).scalar_one_or_none()
-    if not show:
-      raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Show not found")
+    jkt48_schedule_id = data.get("jkt48_schedule_id") or ""
+    theater_schedule_id = None
+    if jkt48_schedule_id:
+      show = self.db.execute(
+        select(TheaterSchedule).where(
+          TheaterSchedule.jkt48_schedule_id == jkt48_schedule_id,
+          TheaterSchedule.deleted_at.is_(None),
+        )
+      ).scalar_one_or_none()
+      if not show:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Show not found")
+      theater_schedule_id = show.id
     row = {
       "contribution_type": data["contribution_type"],
       "jkt48_schedule_id": jkt48_schedule_id,
-      "theater_schedule_id": show.id,
+      "theater_schedule_id": theater_schedule_id,
       "payload": json.dumps(data["payload"]),
       "status": "pending",
       "contributor_name": data.get("contributor_name"),

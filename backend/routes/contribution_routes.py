@@ -13,11 +13,12 @@ class ContributionPayload(BaseModel):
     setlist_name: str | None = None
     show_date: str | None = None
     show_time: str | None = None
+    text: str | None = None
 
 
 class ContributionSubmit(BaseModel):
-    contribution_type: Literal["show_members", "show_info"]
-    jkt48_schedule_id: str
+    contribution_type: Literal["show_members", "show_info", "suggestion"]
+    jkt48_schedule_id: str | None = None
     payload: ContributionPayload
     contributor_name: str | None = None
     contributor_contact: str | None = None
@@ -32,6 +33,9 @@ class ContributionSubmit(BaseModel):
             p = self.payload
             if not any([p.setlist_name, p.show_date, p.show_time]):
                 raise ValueError("at least one of setlist_name, show_date, show_time is required for show_info")
+        elif self.contribution_type == "suggestion":
+            if not self.payload.text or not self.payload.text.strip():
+                raise ValueError("payload.text is required for suggestion")
         return self
 
 

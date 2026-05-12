@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
+import { SuggestionBox } from "@/components/SuggestionBox";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,19 @@ export default async function ContributePage() {
             Below is what still needs your help. Every show you complete makes this tracker better for everyone.
           </p>
         </div>
+
+        {/* General suggestions */}
+        <section className="mb-12">
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-2">
+            Got a suggestion?
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Feature requests, missing data, site feedback — anything. We read every message.
+          </p>
+          <SuggestionBox />
+        </section>
+
+        <hr className="border-border mb-10" />
 
         {/* Category: Missing member lists */}
         <section>

@@ -126,12 +126,14 @@ export default async function AdminPage({
               </div>
 
               {/* Payload */}
-              <div className="rounded-md bg-muted px-3 py-2 text-xs font-mono overflow-x-auto">
+              <div className="rounded-md bg-muted px-3 py-2 text-xs overflow-x-auto">
                 {c.contribution_type === "show_members" &&
                 Array.isArray((c.payload as { members?: unknown[] }).members) ? (
-                  <span>{(c.payload as { members: string[] }).members.join(", ")}</span>
+                  <span className="font-mono">{(c.payload as { members: string[] }).members.join(", ")}</span>
+                ) : c.contribution_type === "suggestion" ? (
+                  <p className="whitespace-pre-wrap">{(c.payload as { text: string }).text}</p>
                 ) : (
-                  <pre className="whitespace-pre-wrap">{JSON.stringify(c.payload, null, 2)}</pre>
+                  <pre className="whitespace-pre-wrap font-mono">{JSON.stringify(c.payload, null, 2)}</pre>
                 )}
               </div>
 
