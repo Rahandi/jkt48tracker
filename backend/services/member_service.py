@@ -22,7 +22,9 @@ class MemberService:
 
   def get_theater_stats(self, jkt48_id: str):
     by_year = self.member_repository.get_shows_by_year(jkt48_id)
-    return {"total": sum(r["count"] for r in by_year), "by_year": by_year}
+    tracked = sum(r["count"] for r in by_year)
+    total = self.member_repository.count_all_shows(jkt48_id)
+    return {"total": total, "tracked": tracked, "by_year": by_year}
 
   def get_upcoming_birthdays(self, days: int = 30):
     return self.member_repository.get_upcoming_birthdays(days)

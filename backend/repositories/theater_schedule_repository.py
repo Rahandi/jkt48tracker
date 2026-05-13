@@ -34,7 +34,10 @@ class TheaterScheduleRepository:
     self.db = db
 
   def _base_statement(self, upcoming: bool = False, past: bool = False, team: str | None = None, setlist_name: str | None = None, no_members: bool = False):
-    stmt = select(TheaterSchedule).where(TheaterSchedule.deleted_at.is_(None))
+    stmt = select(TheaterSchedule).where(
+      TheaterSchedule.deleted_at.is_(None),
+      ~TheaterSchedule.jkt48_schedule_id.like('shd%'),
+    )
     if setlist_name:
       stmt = stmt.where(TheaterSchedule.setlist_name == setlist_name)
     if team:

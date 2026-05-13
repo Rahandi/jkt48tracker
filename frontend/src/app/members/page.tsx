@@ -26,7 +26,6 @@ type Member = {
   blood_type: string | null;
   horoscope: string | null;
   team: string | null;
-  total_show_count: number | null;
 };
 
 type MemberStat = { jkt48_id: string | null; name: string; show_count: number };
@@ -189,14 +188,12 @@ export default async function MembersPage({
                           {member.blood_type}
                         </Badge>
                       )}
-                      {(member.total_show_count != null
-                        ? member.total_show_count
-                        : showCountMap.get(member.jkt48_id)) != null && (
+                      {showCountMap.has(member.jkt48_id) && (
                         <Badge
                           variant="secondary"
                           className="text-[9px] h-3.5 px-1 rounded-full"
                         >
-                          {(member.total_show_count ?? showCountMap.get(member.jkt48_id))}×
+                          {showCountMap.get(member.jkt48_id)}×
                         </Badge>
                       )}
                     </div>

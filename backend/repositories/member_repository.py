@@ -47,6 +47,19 @@ class MemberRepository:
       return self.update(existing.id, data)
     return self.create(data)
 
+  def count_all_shows(self, jkt48_id: str) -> int:
+    """Total show count including shadow/untracked entries (no date filter)."""
+    stmt = (
+      select(func.count(distinct(TheaterSchedule.id)))
+      .join(TheaterScheduleMember, TheaterScheduleMember.theater_schedule_id == TheaterSchedule.id)
+      .where(
+        TheaterScheduleMember.jkt48_id == jkt48_id,
+        TheaterScheduleMember.deleted_at.is_(None),
+        TheaterSchedule.deleted_at.is_(None),
+      )
+    )
+    return self.db.execute(stmt).scalar() or 0
+
   def get_shows_by_year(self, jkt48_id: str) -> list[dict]:
     stmt = (
       select(

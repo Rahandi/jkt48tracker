@@ -18,7 +18,6 @@ class Member(Base):
   twitter = Column(String(100), nullable=True)
   instagram = Column(String(100), nullable=True)
   team = Column(String(50), nullable=True)
-  total_show_count = Column(Integer, nullable=True)
 
   def __repr__(self):
     return f"id: {self.id}, name: {self.name}"

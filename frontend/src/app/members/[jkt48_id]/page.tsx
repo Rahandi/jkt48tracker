@@ -27,7 +27,6 @@ type Member = {
   twitter: string | null;
   instagram: string | null;
   team: string | null;
-  total_show_count: number | null;
 };
 
 type ScheduleMember = { id: number; name: string; jkt48_id: string | null };
@@ -51,7 +50,7 @@ async function getMember(jkt48_id: string): Promise<Member | null> {
   return res.json();
 }
 
-type TheaterStats = { total: number; by_year: { year: number; count: number }[] };
+type TheaterStats = { total: number; tracked: number; by_year: { year: number; count: number }[] };
 
 type RecentShow = { id: number; show_date: string | null; show_time: string | null; setlist_name: string | null };
 
@@ -278,13 +277,13 @@ export default async function MemberPage({
                 Theater Shows per Year
               </h2>
               <span className="text-xs text-muted-foreground">
-                {member.total_show_count ?? theaterStats.total} shows
+                {theaterStats.total} shows
               </span>
             </div>
             <ShowsByYearChart data={theaterStats.by_year} />
-            {member.total_show_count != null && theaterStats.total < member.total_show_count ? (
+            {theaterStats.total > theaterStats.tracked ? (
               <p className="text-xs text-muted-foreground mt-2">
-                * {member.total_show_count - theaterStats.total} untracked shows are not reflected in the chart.{" "}
+                * {theaterStats.total - theaterStats.tracked} untracked shows are not reflected in the chart.{" "}
                 <a href="/contribute" className="underline underline-offset-2 hover:text-foreground transition-colors">
                   Help complete the data.
                 </a>
