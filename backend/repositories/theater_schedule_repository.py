@@ -237,6 +237,10 @@ class TheaterScheduleRepository:
       .where(
         TheaterScheduleMember.deleted_at.is_(None),
         TheaterSchedule.deleted_at.is_(None),
+        or_(
+          TheaterSchedule.show_date < date.today(),
+          TheaterSchedule.show_date.is_(None),
+        ),
       )
       .group_by(TheaterScheduleMember.jkt48_id, TheaterScheduleMember.name)
       .order_by(func.count(distinct(TheaterScheduleMember.theater_schedule_id)).desc())

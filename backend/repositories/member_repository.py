@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import delete, distinct, extract, func, insert, select, update
+from sqlalchemy import delete, distinct, extract, func, insert, or_, select, update
 from sqlalchemy.orm import Session
 
 from models.member import Member
@@ -48,7 +48,7 @@ class MemberRepository:
     return self.create(data)
 
   def count_all_shows(self, jkt48_id: str) -> int:
-    """Total show count including shadow/untracked entries (no date filter)."""
+    """Total show count: past performed shows + shadow/untracked entries (null date)."""
     stmt = (
       select(func.count(distinct(TheaterSchedule.id)))
       .join(TheaterScheduleMember, TheaterScheduleMember.theater_schedule_id == TheaterSchedule.id)
@@ -56,6 +56,10 @@ class MemberRepository:
         TheaterScheduleMember.jkt48_id == jkt48_id,
         TheaterScheduleMember.deleted_at.is_(None),
         TheaterSchedule.deleted_at.is_(None),
+        or_(
+          TheaterSchedule.show_date < date.today(),
+          TheaterSchedule.show_date.is_(None),
+        ),
       )
     )
     return self.db.execute(stmt).scalar() or 0
@@ -72,6 +76,7 @@ class MemberRepository:
         TheaterScheduleMember.deleted_at.is_(None),
         TheaterSchedule.deleted_at.is_(None),
         TheaterSchedule.show_date.isnot(None),
+        TheaterSchedule.show_date < date.today(),
       )
       .group_by("year")
       .order_by("year")
