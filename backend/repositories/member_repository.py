@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone, timedelta
 
 from sqlalchemy import and_, delete, distinct, extract, func, insert, or_, select, update
 from sqlalchemy.orm import Session
@@ -10,9 +10,9 @@ from models.theater_schedule_member import TheaterScheduleMember
 
 def _performed_filter():
     """Shows that have already been performed: past days, today past show time, or shadow entries."""
-    now = datetime.now()
-    today = now.date()
-    current_time = now.strftime("%H:%M")
+    now_wib = datetime.now(timezone.utc) + timedelta(hours=7)
+    today = now_wib.date()
+    current_time = now_wib.strftime("%H:%M")
     return or_(
         TheaterSchedule.show_date < today,
         TheaterSchedule.show_date.is_(None),
