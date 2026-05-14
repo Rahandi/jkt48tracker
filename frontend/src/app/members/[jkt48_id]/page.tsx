@@ -65,12 +65,12 @@ async function getUpcomingSchedules(): Promise<TheaterSchedule[]> {
 }
 
 async function getMemberTheaterStats(jkt48_id: string): Promise<TheaterStats> {
-  if (!process.env.BACKEND_URL) return { total: 0, by_year: [] };
+  if (!process.env.BACKEND_URL) return { total: 0, tracked: 0, by_year: [] };
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/members/${jkt48_id}/theater-stats`,
     { next: { revalidate: 3600 } }
   );
-  if (!res.ok) return { total: 0, by_year: [] };
+  if (!res.ok) return { total: 0, tracked: 0, by_year: [] };
   return res.json();
 }
 
