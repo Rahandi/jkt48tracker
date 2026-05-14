@@ -40,6 +40,7 @@ type Member = {
 async function getSchedules(opts: {
   upcoming?: boolean;
   past?: boolean;
+  ongoing?: boolean;
   limit?: number;
   offset?: number;
   team?: string;
@@ -47,6 +48,7 @@ async function getSchedules(opts: {
   const params = new URLSearchParams();
   if (opts.upcoming) params.set("upcoming", "true");
   if (opts.past) params.set("past", "true");
+  if (opts.ongoing) params.set("ongoing", "true");
   if (opts.limit != null) params.set("limit", String(opts.limit));
   if (opts.offset) params.set("offset", String(opts.offset));
   if (opts.team) params.set("team", opts.team);
@@ -195,7 +197,7 @@ export default async function TheaterPage({
   const offset = (page - 1) * PER_PAGE;
   const teamParam = team || undefined;
 
-  const [schedules, total, upcomingCount, pastCount, members, topSetlists] = await Promise.all([
+  const [schedules, total, upcomingCount, pastCount, ongoingSchedules, members, topSetlists] = await Promise.all([
     isPast
       ? getSchedules({ past: true, limit: PER_PAGE, offset, team: teamParam })
       : getSchedules({ upcoming: true, team: teamParam }),
@@ -204,6 +206,7 @@ export default async function TheaterPage({
       : getScheduleCount({ upcoming: true, team: teamParam }),
     getScheduleCount({ upcoming: true }),
     getScheduleCount({ past: true }),
+    getSchedules({ ongoing: true }),
     getMembers(),
     getTopSetlists(),
   ]);
@@ -218,6 +221,25 @@ export default async function TheaterPage({
           <h1 className="text-2xl font-bold text-foreground">Theater Schedule</h1>
           <span className="text-sm text-muted-foreground">{total.toLocaleString()} shows</span>
         </div>
+
+        {ongoingSchedules.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
+              </span>
+              <h2 className="text-xs font-semibold text-primary uppercase tracking-wider">
+                Happening Now
+              </h2>
+            </div>
+            <div className="flex flex-col gap-3">
+              {ongoingSchedules.map((s) => (
+                <ShowRow key={s.id} s={s} memberMap={memberMap} />
+              ))}
+            </div>
+          </div>
+        )}
 
         <TheaterTabs activeTab={tab} upcomingCount={upcomingCount} pastCount={pastCount} />
 

@@ -50,7 +50,7 @@ async function getMembers(): Promise<Member[]> {
 }
 
 async function getSchedules(
-  filter: "upcoming" | "past",
+  filter: "upcoming" | "past" | "ongoing",
   limit?: number
 ): Promise<TheaterSchedule[]> {
   if (!process.env.BACKEND_URL) return [];
@@ -160,10 +160,11 @@ function ShowCard({
 }
 
 export default async function HomePage() {
-  const [members, upcomingSchedules, pastSchedules, memberStats, showsByYear, upcomingBirthdays] =
+  const [members, upcomingSchedules, ongoingSchedules, pastSchedules, memberStats, showsByYear, upcomingBirthdays] =
     await Promise.all([
       getMembers(),
       getSchedules("upcoming"),
+      getSchedules("ongoing"),
       getSchedules("past", 5),
       getMemberStats(),
       getShowsByYear(),
@@ -172,7 +173,8 @@ export default async function HomePage() {
 
   const memberMap = new Map(members.map((m) => [m.jkt48_id, m]));
   const totalShows = showsByYear.reduce((sum, d) => sum + d.count, 0);
-  const nextShow = upcomingSchedules[0] ?? null;
+  const featuredShow = ongoingSchedules[0] ?? upcomingSchedules[0] ?? null;
+  const featuredLabel = ongoingSchedules.length > 0 ? "Happening Now" : "Next Show";
 
   const topMembersWithPhotos = memberStats
     .filter((ms) => ms.jkt48_id && memberMap.get(ms.jkt48_id as string)?.image_url)
@@ -268,24 +270,32 @@ export default async function HomePage() {
                 </Link>
               </div>
 
-              {/* Next show card */}
-              {nextShow && (
-                <Link href={`/theater/${nextShow.id}`}>
+              {/* Next show / Happening Now card */}
+              {featuredShow && (
+                <Link href={`/theater/${featuredShow.id}`}>
                   <Card className="hover:ring-2 hover:ring-primary/60 transition-all duration-200 cursor-pointer">
                     <CardContent className="py-4 px-5">
-                      <span className="text-[10px] font-bold text-primary uppercase tracking-widest">
-                        Next Show
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {ongoingSchedules.length > 0 && (
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                          </span>
+                        )}
+                        <span className="text-[10px] font-bold text-primary uppercase tracking-widest">
+                          {featuredLabel}
+                        </span>
+                      </div>
                       <p className="font-semibold text-foreground mt-1 leading-tight">
-                        {nextShow.setlist_name ?? "TBA"}
+                        {featuredShow.setlist_name ?? "TBA"}
                       </p>
                       <p className="text-muted-foreground text-xs mt-1">
-                        {nextShow.show_date ? formatDate(nextShow.show_date) : "Date TBA"}
-                        {nextShow.show_time && ` · ${nextShow.show_time} WIB`}
+                        {featuredShow.show_date ? formatDate(featuredShow.show_date) : "Date TBA"}
+                        {featuredShow.show_time && ` · ${featuredShow.show_time} WIB`}
                       </p>
-                      {nextShow.members.length > 0 && (
+                      {featuredShow.members.length > 0 && (
                         <div className="flex -space-x-1.5 mt-3">
-                          {nextShow.members.slice(0, 10).map((m, i) => {
+                          {featuredShow.members.slice(0, 10).map((m, i) => {
                             const info = m.jkt48_id ? memberMap.get(m.jkt48_id) : undefined;
                             return info?.image_url ? (
                               <Image
@@ -307,9 +317,9 @@ export default async function HomePage() {
                               </div>
                             );
                           })}
-                          {nextShow.member_count > 10 && (
+                          {featuredShow.member_count > 10 && (
                             <span className="text-xs text-muted-foreground ml-2 self-center">
-                              +{nextShow.member_count - 10}
+                              +{featuredShow.member_count - 10}
                             </span>
                           )}
                         </div>
@@ -408,6 +418,26 @@ export default async function HomePage() {
                 <ShowsByYearChart data={showsByYear} />
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* ── Happening Now ────────────────────────────────── */}
+        {ongoingSchedules.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
+              </span>
+              <h2 className="text-xs font-semibold text-primary uppercase tracking-wider">
+                Happening Now
+              </h2>
+            </div>
+            <div className="flex flex-col gap-3">
+              {ongoingSchedules.map((s) => (
+                <ShowCard key={s.id} s={s} memberMap={memberMap} />
+              ))}
+            </div>
           </div>
         )}
 

@@ -8,11 +8,11 @@ class TheaterScheduleService:
   def __init__(self, db: Session = Depends(get_session)):
     self.repo = TheaterScheduleRepository(db)
 
-  def get_all_with_members(self, upcoming: bool = False, past: bool = False, limit: int | None = None, offset: int = 0, team: str | None = None, setlist_name: str | None = None, no_members: bool = False):
-    return self.repo.get_all_with_members(upcoming=upcoming, past=past, limit=limit, offset=offset, team=team, setlist_name=setlist_name, no_members=no_members)
+  def get_all_with_members(self, upcoming: bool = False, past: bool = False, ongoing: bool = False, limit: int | None = None, offset: int = 0, team: str | None = None, setlist_name: str | None = None, no_members: bool = False):
+    return self.repo.get_all_with_members(upcoming=upcoming, past=past, ongoing=ongoing, limit=limit, offset=offset, team=team, setlist_name=setlist_name, no_members=no_members)
 
-  def count(self, upcoming: bool = False, past: bool = False, team: str | None = None, setlist_name: str | None = None, no_members: bool = False) -> int:
-    return self.repo.count_all(upcoming=upcoming, past=past, team=team, setlist_name=setlist_name, no_members=no_members)
+  def count(self, upcoming: bool = False, past: bool = False, ongoing: bool = False, team: str | None = None, setlist_name: str | None = None, no_members: bool = False) -> int:
+    return self.repo.count_all(upcoming=upcoming, past=past, ongoing=ongoing, team=team, setlist_name=setlist_name, no_members=no_members)
 
   def get_all_setlists(self):
     return self.repo.get_all_setlists()

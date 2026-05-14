@@ -51,7 +51,7 @@ class TheaterScheduleRepository:
   def __init__(self, db: Session):
     self.db = db
 
-  def _base_statement(self, upcoming: bool = False, past: bool = False, team: str | None = None, setlist_name: str | None = None, no_members: bool = False):
+  def _base_statement(self, upcoming: bool = False, past: bool = False, ongoing: bool = False, team: str | None = None, setlist_name: str | None = None, no_members: bool = False):
     stmt = select(TheaterSchedule).where(
       TheaterSchedule.deleted_at.is_(None),
       ~TheaterSchedule.jkt48_schedule_id.like('shd%'),
@@ -73,31 +73,65 @@ class TheaterScheduleRepository:
           TheaterScheduleMember.deleted_at.is_(None),
         )
       )
-    if upcoming:
-      stmt = stmt.where(TheaterSchedule.show_date >= date.today())
+    if ongoing:
+      now_wib = datetime.now(timezone.utc) + timedelta(hours=7)
+      today = now_wib.date()
+      current_time = now_wib.strftime("%H:%M")
+      cutoff_time = (now_wib - timedelta(minutes=150)).strftime("%H:%M")
+      stmt = stmt.where(
+        TheaterSchedule.show_date == today,
+        TheaterSchedule.show_time.isnot(None),
+        TheaterSchedule.show_time >= cutoff_time,
+        TheaterSchedule.show_time <= current_time,
+      )
+      stmt = stmt.order_by(TheaterSchedule.show_time.asc())
+    elif upcoming:
+      now_wib = datetime.now(timezone.utc) + timedelta(hours=7)
+      today = now_wib.date()
+      current_time = now_wib.strftime("%H:%M")
+      stmt = stmt.where(or_(
+        TheaterSchedule.show_date > today,
+        and_(
+          TheaterSchedule.show_date == today,
+          TheaterSchedule.show_time.isnot(None),
+          TheaterSchedule.show_time > current_time,
+        ),
+      ))
       stmt = stmt.order_by(TheaterSchedule.show_date.asc(), TheaterSchedule.show_time.asc())
     elif past:
-      stmt = stmt.where(TheaterSchedule.show_date < date.today())
+      now_wib = datetime.now(timezone.utc) + timedelta(hours=7)
+      today = now_wib.date()
+      cutoff_time = (now_wib - timedelta(minutes=150)).strftime("%H:%M")
+      stmt = stmt.where(or_(
+        TheaterSchedule.show_date < today,
+        and_(
+          TheaterSchedule.show_date == today,
+          or_(
+            TheaterSchedule.show_time.is_(None),
+            TheaterSchedule.show_time <= cutoff_time,
+          ),
+        ),
+      ))
       stmt = stmt.order_by(TheaterSchedule.show_date.desc(), TheaterSchedule.show_time.desc())
     else:
       stmt = stmt.order_by(TheaterSchedule.show_date.desc(), TheaterSchedule.show_time.desc())
     return stmt
 
-  def get_all(self, upcoming: bool = False, past: bool = False, limit: int | None = None, offset: int = 0, team: str | None = None, setlist_name: str | None = None, no_members: bool = False):
-    stmt = self._base_statement(upcoming=upcoming, past=past, team=team, setlist_name=setlist_name, no_members=no_members)
+  def get_all(self, upcoming: bool = False, past: bool = False, ongoing: bool = False, limit: int | None = None, offset: int = 0, team: str | None = None, setlist_name: str | None = None, no_members: bool = False):
+    stmt = self._base_statement(upcoming=upcoming, past=past, ongoing=ongoing, team=team, setlist_name=setlist_name, no_members=no_members)
     if offset:
       stmt = stmt.offset(offset)
     if limit is not None:
       stmt = stmt.limit(limit)
     return self.db.execute(stmt).scalars().all()
 
-  def count_all(self, upcoming: bool = False, past: bool = False, team: str | None = None, setlist_name: str | None = None, no_members: bool = False) -> int:
-    base = self._base_statement(upcoming=upcoming, past=past, team=team, setlist_name=setlist_name, no_members=no_members)
+  def count_all(self, upcoming: bool = False, past: bool = False, ongoing: bool = False, team: str | None = None, setlist_name: str | None = None, no_members: bool = False) -> int:
+    base = self._base_statement(upcoming=upcoming, past=past, ongoing=ongoing, team=team, setlist_name=setlist_name, no_members=no_members)
     count_stmt = select(func.count()).select_from(base.subquery())
     return self.db.execute(count_stmt).scalar() or 0
 
-  def get_all_with_members(self, upcoming: bool = False, past: bool = False, limit: int | None = None, offset: int = 0, team: str | None = None, setlist_name: str | None = None, no_members: bool = False) -> list[dict]:
-    schedules = self.get_all(upcoming=upcoming, past=past, limit=limit, offset=offset, team=team, setlist_name=setlist_name, no_members=no_members)
+  def get_all_with_members(self, upcoming: bool = False, past: bool = False, ongoing: bool = False, limit: int | None = None, offset: int = 0, team: str | None = None, setlist_name: str | None = None, no_members: bool = False) -> list[dict]:
+    schedules = self.get_all(upcoming=upcoming, past=past, ongoing=ongoing, limit=limit, offset=offset, team=team, setlist_name=setlist_name, no_members=no_members)
     return [_schedule_row(s, self.get_members(s.id)) for s in schedules]
 
   def get_all_setlists(self) -> list[dict]:

@@ -9,18 +9,20 @@ router = APIRouter(prefix="/theater-schedules", tags=["theater-schedules"])
 async def count_theater_schedules(
     upcoming: bool = Query(False),
     past: bool = Query(False),
+    ongoing: bool = Query(False),
     team: str | None = Query(None),
     setlist_name: str | None = Query(None),
     no_members: bool = Query(False),
     service: TheaterScheduleService = Depends(),
 ):
-    return {"count": service.count(upcoming=upcoming, past=past, team=team, setlist_name=setlist_name, no_members=no_members)}
+    return {"count": service.count(upcoming=upcoming, past=past, ongoing=ongoing, team=team, setlist_name=setlist_name, no_members=no_members)}
 
 
 @router.get("/")
 async def list_theater_schedules(
     upcoming: bool = Query(False),
     past: bool = Query(False),
+    ongoing: bool = Query(False),
     limit: int = Query(None),
     offset: int = Query(0),
     team: str | None = Query(None),
@@ -28,7 +30,7 @@ async def list_theater_schedules(
     no_members: bool = Query(False),
     service: TheaterScheduleService = Depends(),
 ):
-    return service.get_all_with_members(upcoming=upcoming, past=past, limit=limit, offset=offset, team=team, setlist_name=setlist_name, no_members=no_members)
+    return service.get_all_with_members(upcoming=upcoming, past=past, ongoing=ongoing, limit=limit, offset=offset, team=team, setlist_name=setlist_name, no_members=no_members)
 
 
 @router.get("/member-stats")
