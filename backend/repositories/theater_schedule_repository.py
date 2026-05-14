@@ -238,7 +238,7 @@ class TheaterScheduleRepository:
         TheaterScheduleMember.deleted_at.is_(None),
         TheaterSchedule.deleted_at.is_(None),
         or_(
-          TheaterSchedule.show_date < date.today(),
+          TheaterSchedule.show_date <= date.today(),
           TheaterSchedule.show_date.is_(None),
         ),
       )
