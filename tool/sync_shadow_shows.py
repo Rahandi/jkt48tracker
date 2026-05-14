@@ -101,10 +101,21 @@ def build_nickname_lookup(members: list[dict]) -> dict[str, dict]:
 
 
 def get_current_show_counts() -> dict[str, int]:
-    """Returns {jkt48_id: current_count} from member-stats endpoint."""
+    """Returns {jkt48_id: current_count} from member-stats endpoint (past + shadow only)."""
     resp = requests.get(f"{PUBLIC_URL}/theater-schedules/member-stats", timeout=15)
     resp.raise_for_status()
     return {r["jkt48_id"]: r["show_count"] for r in resp.json() if r.get("jkt48_id")}
+
+
+def get_existing_shadow_count(jkt48_id: str) -> int:
+    """Returns how many shadow entries already exist for this member (total - tracked)."""
+    resp = requests.get(f"{PUBLIC_URL}/members/{jkt48_id}/theater-stats", timeout=15)
+    if not resp.ok:
+        return 0
+    data = resp.json()
+    total = data.get("total", 0)
+    tracked = data.get("tracked", 0)
+    return max(0, total - tracked)
 
 
 def main():
@@ -164,10 +175,12 @@ def main():
             total_skipped += 1
             continue
 
-        print(f"  {tweet_nick:12s} {real_total:4d} shows — current {current}, creating {gap} shadow entries")
+        existing_shadows = get_existing_shadow_count(jkt48_id)
+        next_slot = existing_shadows + 1
+        print(f"  {tweet_nick:12s} {real_total:4d} shows — current {current} (shadows: {existing_shadows}), creating {gap} more (slots {next_slot}–{next_slot + gap - 1})")
 
         batch: list[dict] = []
-        for slot in range(1, gap + 1):
+        for slot in range(next_slot, next_slot + gap):
             shadow_id = f"shd{member_idx:04d}{slot:04d}"
             batch.append({
                 "jkt48_schedule_id": shadow_id,
