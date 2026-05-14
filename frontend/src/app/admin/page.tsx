@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { formatDate } from "@/lib/utils";
 import { AdminKeyForm } from "./AdminKeyForm";
 import { ContributionActions } from "./ContributionActions";
@@ -44,9 +45,11 @@ async function fetchContributions(key: string, status: string) {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ key?: string; status?: string }>;
+  searchParams: Promise<{ status?: string }>;
 }) {
-  const { key = "", status = "pending" } = await searchParams;
+  const { status = "pending" } = await searchParams;
+  const cookieStore = await cookies();
+  const key = cookieStore.get("admin_key")?.value ?? "";
 
   if (!key) return <AdminKeyForm />;
 
@@ -78,7 +81,7 @@ export default async function AdminPage({
         {STATUS_TABS.map((tab) => (
           <a
             key={tab}
-            href={`/admin?key=${encodeURIComponent(key)}&status=${tab}`}
+            href={`/admin?status=${tab}`}
             className={`px-4 py-2 text-sm font-medium capitalize border-b-2 -mb-px transition-colors ${
               activeTab === tab
                 ? "border-primary text-foreground"
@@ -142,7 +145,7 @@ export default async function AdminPage({
               )}
 
               {c.status === "pending" && (
-                <ContributionActions contributionId={c.id} adminKey={key} />
+                <ContributionActions contributionId={c.id} />
               )}
             </div>
           ))}

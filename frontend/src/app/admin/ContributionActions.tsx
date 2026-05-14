@@ -5,10 +5,9 @@ import { useState } from "react";
 
 interface Props {
   contributionId: number;
-  adminKey: string;
 }
 
-export function ContributionActions({ contributionId, adminKey }: Props) {
+export function ContributionActions({ contributionId }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState<"approve" | "reject" | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -26,7 +25,6 @@ export function ContributionActions({ contributionId, adminKey }: Props) {
           contributionId,
           action,
           reason: action === "reject" ? rejectReason : undefined,
-          key: adminKey,
         }),
       });
       if (!res.ok) {

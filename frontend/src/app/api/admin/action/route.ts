@@ -1,6 +1,10 @@
+import { cookies } from "next/headers";
+
 export async function POST(req: Request) {
-  const { contributionId, action, reason, key } = await req.json();
-  if (!key) return Response.json({ detail: "Missing key" }, { status: 401 });
+  const { contributionId, action, reason } = await req.json();
+  const cookieStore = await cookies();
+  const key = cookieStore.get("admin_key")?.value;
+  if (!key) return Response.json({ detail: "Not authenticated" }, { status: 401 });
 
   const path = action === "approve" ? "approve" : "reject";
   const res = await fetch(

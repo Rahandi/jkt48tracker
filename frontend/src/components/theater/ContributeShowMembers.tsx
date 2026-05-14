@@ -59,8 +59,14 @@ export function ContributeShowMembers({ jkt48ScheduleId }: Props) {
 
   if (state === "success") {
     return (
-      <div className="mt-4 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-700 dark:text-green-400">
-        Thank you! Your submission is under review and will appear once approved.
+      <div className="mt-4 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-700 dark:text-green-400 flex items-center justify-between gap-4">
+        <span>Thank you! Your submission is under review and will appear once approved.</span>
+        <button
+          onClick={() => { setState("idle"); setMembers(""); setName(""); setNote(""); }}
+          className="shrink-0 underline underline-offset-2 hover:no-underline"
+        >
+          Submit another
+        </button>
       </div>
     );
   }

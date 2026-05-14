@@ -35,6 +35,8 @@ class ContributionService:
     payload = json.loads(c.payload)
 
     if c.contribution_type == "show_members":
+      if c.theater_schedule_id is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Associated show no longer exists")
       member_names: list[str] = payload.get("members", [])
       resolved = []
       for name in member_names:
@@ -53,6 +55,8 @@ class ContributionService:
     elif c.contribution_type == "show_info":
       fields = {k: v for k, v in payload.items() if k in ("setlist_name", "show_date", "show_time") and v}
       if fields:
+        if c.theater_schedule_id is None:
+          raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Associated show no longer exists")
         self.schedule_repo.update(c.theater_schedule_id, fields)
 
     self.repo.approve(contribution_id)

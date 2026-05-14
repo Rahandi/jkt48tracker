@@ -35,8 +35,14 @@ export function SuggestionBox() {
 
   if (state === "success") {
     return (
-      <div className="rounded-xl border border-green-500/30 bg-green-500/10 px-5 py-4 text-sm text-green-700 dark:text-green-400">
-        Thanks for the suggestion! We read every one.
+      <div className="rounded-xl border border-green-500/30 bg-green-500/10 px-5 py-4 text-sm text-green-700 dark:text-green-400 flex items-center justify-between gap-4">
+        <span>Thanks for the suggestion! We read every one.</span>
+        <button
+          onClick={() => { setState("idle"); setText(""); setName(""); }}
+          className="shrink-0 underline underline-offset-2 hover:no-underline"
+        >
+          Send another
+        </button>
       </div>
     );
   }
