@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy import and_, delete, distinct, exists, extract, func, insert, or_, select, update
 from sqlalchemy.orm import Session
@@ -6,6 +6,24 @@ from sqlalchemy.orm import Session
 from models.member import Member
 from models.theater_schedule import TheaterSchedule
 from models.theater_schedule_member import TheaterScheduleMember
+
+
+def _performed_filter():
+    """Shows that have already been performed: past days, today past show time, or shadow entries."""
+    now = datetime.now()
+    today = now.date()
+    current_time = now.strftime("%H:%M")
+    return or_(
+        TheaterSchedule.show_date < today,
+        TheaterSchedule.show_date.is_(None),
+        and_(
+            TheaterSchedule.show_date == today,
+            or_(
+                TheaterSchedule.show_time.is_(None),
+                TheaterSchedule.show_time <= current_time,
+            ),
+        ),
+    )
 
 
 def _member_row(m: TheaterScheduleMember) -> dict:
@@ -237,10 +255,7 @@ class TheaterScheduleRepository:
       .where(
         TheaterScheduleMember.deleted_at.is_(None),
         TheaterSchedule.deleted_at.is_(None),
-        or_(
-          TheaterSchedule.show_date <= date.today(),
-          TheaterSchedule.show_date.is_(None),
-        ),
+        _performed_filter(),
       )
       .group_by(TheaterScheduleMember.jkt48_id, TheaterScheduleMember.name)
       .order_by(func.count(distinct(TheaterScheduleMember.theater_schedule_id)).desc())

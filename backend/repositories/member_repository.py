@@ -1,11 +1,29 @@
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import delete, distinct, extract, func, insert, or_, select, update
+from sqlalchemy import and_, delete, distinct, extract, func, insert, or_, select, update
 from sqlalchemy.orm import Session
 
 from models.member import Member
 from models.theater_schedule import TheaterSchedule
 from models.theater_schedule_member import TheaterScheduleMember
+
+
+def _performed_filter():
+    """Shows that have already been performed: past days, today past show time, or shadow entries."""
+    now = datetime.now()
+    today = now.date()
+    current_time = now.strftime("%H:%M")
+    return or_(
+        TheaterSchedule.show_date < today,
+        TheaterSchedule.show_date.is_(None),
+        and_(
+            TheaterSchedule.show_date == today,
+            or_(
+                TheaterSchedule.show_time.is_(None),
+                TheaterSchedule.show_time <= current_time,
+            ),
+        ),
+    )
 
 
 class MemberRepository:
@@ -56,10 +74,7 @@ class MemberRepository:
         TheaterScheduleMember.jkt48_id == jkt48_id,
         TheaterScheduleMember.deleted_at.is_(None),
         TheaterSchedule.deleted_at.is_(None),
-        or_(
-          TheaterSchedule.show_date <= date.today(),
-          TheaterSchedule.show_date.is_(None),
-        ),
+        _performed_filter(),
       )
     )
     return self.db.execute(stmt).scalar() or 0
@@ -76,7 +91,7 @@ class MemberRepository:
         TheaterScheduleMember.deleted_at.is_(None),
         TheaterSchedule.deleted_at.is_(None),
         TheaterSchedule.show_date.isnot(None),
-        TheaterSchedule.show_date <= date.today(),
+        _performed_filter(),
       )
       .group_by("year")
       .order_by("year")
