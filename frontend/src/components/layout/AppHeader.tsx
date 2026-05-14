@@ -7,6 +7,7 @@ export function AppHeader() {
   const pathname = usePathname();
 
   const navLinks = [
+    { href: "/", label: "Home" },
     { href: "/members", label: "Members" },
     { href: "/theater", label: "Theater" },
     { href: "/setlists", label: "Setlists" },
@@ -26,7 +27,7 @@ export function AppHeader() {
 
         <nav className="flex items-center gap-1">
           {navLinks.map(({ href, label }) => {
-            const active = pathname === href || pathname.startsWith(href + "/");
+            const active = pathname === href || (href !== "/" && pathname.startsWith(href + "/"));
             return (
               <Link
                 key={href}
