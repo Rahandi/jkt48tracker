@@ -116,10 +116,13 @@ def _twitter_client() -> tweepy.Client:
 
 
 def main():
-    missing = [k for k in ("TWITTER_API_KEY", "TWITTER_API_SECRET", "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_TOKEN_SECRET") if not os.getenv(k)]
-    if missing:
-        print(f"Missing Twitter env vars: {', '.join(missing)}", file=sys.stderr)
-        sys.exit(1)
+    mark_only = "--mark-only" in sys.argv
+
+    if not mark_only:
+        missing = [k for k in ("TWITTER_API_KEY", "TWITTER_API_SECRET", "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_TOKEN_SECRET") if not os.getenv(k)]
+        if missing:
+            print(f"Missing Twitter env vars: {', '.join(missing)}", file=sys.stderr)
+            sys.exit(1)
 
     shows = _get_untweeted()
     if not shows:
@@ -127,19 +130,21 @@ def main():
         return
 
     stat_lookup = _get_member_stats()
-    client = _twitter_client()
+    client = None if mark_only else _twitter_client()
 
     for show in shows:
-        page_url = f"{PUBLIC_SITE_URL}/theater/{show['id']}"
-        tweet_text = _build_tweet(show, stat_lookup, page_url)
-
+        label = show.get("setlist_name") or f"show #{show['id']}"
         try:
-            client.create_tweet(text=tweet_text)
+            if not mark_only:
+                page_url = f"{PUBLIC_SITE_URL}/theater/{show['id']}"
+                tweet_text = _build_tweet(show, stat_lookup, page_url)
+                client.create_tweet(text=tweet_text)
+                print(f"Tweeted: {label} ({show.get('show_date')} {show.get('show_time')})")
+            else:
+                print(f"Marking (no tweet): {label} ({show.get('show_date')} {show.get('show_time')})")
             _mark_tweeted(show["id"])
-            label = show.get("setlist_name") or f"show #{show['id']}"
-            print(f"Tweeted: {label} ({show.get('show_date')} {show.get('show_time')})")
         except Exception as e:
-            print(f"Failed to tweet show {show['id']}: {e}", file=sys.stderr)
+            print(f"Failed for show {show['id']}: {e}", file=sys.stderr)
 
 
 if __name__ == "__main__":
