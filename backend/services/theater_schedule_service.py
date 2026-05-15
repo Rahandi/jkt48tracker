@@ -37,3 +37,9 @@ class TheaterScheduleService:
 
   def sync(self, schedules: list[dict]):
     return [self.repo.upsert(s) for s in schedules]
+
+  def get_untweeted(self):
+    return self.repo.get_untweeted()
+
+  def mark_tweeted(self, schedule_id: int):
+    self.repo.mark_tweeted(schedule_id)

@@ -336,3 +336,37 @@ class TheaterScheduleRepository:
     if existing:
       return self.update(existing.id, data)
     return self.create(data)
+
+  def get_untweeted(self) -> list[dict]:
+    """Past shows with show_time set that haven't been tweeted yet."""
+    now_wib = datetime.now(timezone.utc) + timedelta(hours=7)
+    today = now_wib.date()
+    cutoff_time = (now_wib - timedelta(minutes=150)).strftime("%H:%M")
+    stmt = (
+      select(TheaterSchedule)
+      .where(
+        TheaterSchedule.deleted_at.is_(None),
+        TheaterSchedule.tweeted_at.is_(None),
+        TheaterSchedule.show_time.isnot(None),
+        ~TheaterSchedule.jkt48_schedule_id.like('shd%'),
+        or_(
+          TheaterSchedule.show_date < today,
+          and_(
+            TheaterSchedule.show_date == today,
+            TheaterSchedule.show_time <= cutoff_time,
+          ),
+        ),
+      )
+      .order_by(TheaterSchedule.show_date.asc(), TheaterSchedule.show_time.asc())
+    )
+    schedules = self.db.execute(stmt).scalars().all()
+    return [_schedule_row(s, self.get_members(s.id)) for s in schedules]
+
+  def mark_tweeted(self, schedule_id: int) -> None:
+    from time import time as _time
+    self.db.execute(
+      update(TheaterSchedule)
+      .where(TheaterSchedule.id == schedule_id)
+      .values(tweeted_at=int(_time()))
+    )
+    self.db.commit()

@@ -30,3 +30,14 @@ async def sync_theater_schedules(
     data = [s.model_dump() for s in schedules]
     synced = service.sync(data)
     return {"synced": len(synced)}
+
+
+@router.get("/untweeted", dependencies=[Depends(require_api_key)])
+async def get_untweeted_schedules(service: TheaterScheduleService = Depends()):
+    return service.get_untweeted()
+
+
+@router.post("/{schedule_id}/mark-tweeted", dependencies=[Depends(require_api_key)])
+async def mark_tweeted(schedule_id: int, service: TheaterScheduleService = Depends()):
+    service.mark_tweeted(schedule_id)
+    return {"ok": True}
