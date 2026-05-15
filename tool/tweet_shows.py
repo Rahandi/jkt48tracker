@@ -135,7 +135,7 @@ def generate_show_image(show: dict, stat_lookup: dict[str, int], image_url_looku
     meta = " · ".join(filter(None, [date_str, time_str]))
     font_meta = _font(26)
     meta_w = draw.textbbox((0, 0), meta, font=font_meta)[2]
-    draw.text((W - PAD - meta_w, date_y), meta, font=font_meta, fill=TEXT_SEC)
+    draw.text((PAD, date_y), meta, font=font_meta, fill=TEXT_SEC)
 
     # ── Divider ───────────────────────────────────────────────────────────────
     draw.rectangle([PAD, divider_y, W - PAD, divider_y + 2], fill=DIVIDER)
