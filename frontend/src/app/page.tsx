@@ -58,7 +58,7 @@ async function getSchedules(
   if (limit) params.set("limit", String(limit));
   const res = await fetch(
     `${process.env.BACKEND_URL}/api/theater-schedules/?${params}`,
-    { next: { revalidate: 3600 } }
+    { cache: "no-store" }
   );
   if (!res.ok) return [];
   return res.json();
