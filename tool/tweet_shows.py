@@ -105,7 +105,9 @@ def generate_show_image(show: dict, stat_lookup: dict[str, int], image_url_looku
     setlist    = show.get("setlist_name") or "JKT48 Theater Show"
     title_font = _fit_font(_probe, setlist, W - PAD * 2, bold=True)
     title_bottom = _probe.textbbox((PAD, 108), setlist, font=title_font)[3]
-    divider_y    = title_bottom + 30
+    _meta_h      = _probe.textbbox((0, 0), "Ay", font=_font(26))[3]
+    date_y       = title_bottom + 10
+    divider_y    = date_y + _meta_h + 20
     member_start = divider_y + 18 + 26 + 14   # label height + gap
 
     avatar_size = 32
@@ -127,15 +129,13 @@ def generate_show_image(show: dict, stat_lookup: dict[str, int], image_url_looku
     # ── Show name ─────────────────────────────────────────────────────────────
     draw.text((PAD, 108), setlist, font=title_font, fill=TEXT_PRI)
 
-    # ── Date · time (right-aligned, bottom-aligned with title) ────────────────
+    # ── Date · time (right-aligned, below title) ──────────────────────────────
     date_str = _format_date(show["show_date"]) if show.get("show_date") else ""
     time_str = f"{show['show_time']} WIB" if show.get("show_time") else ""
     meta = " · ".join(filter(None, [date_str, time_str]))
     font_meta = _font(26)
-    meta_bbox = draw.textbbox((0, 0), meta, font=font_meta)
-    meta_h = meta_bbox[3] - meta_bbox[1]
-    meta_w = meta_bbox[2] - meta_bbox[0]
-    draw.text((W - PAD - meta_w, title_bottom - meta_h), meta, font=font_meta, fill=TEXT_SEC)
+    meta_w = draw.textbbox((0, 0), meta, font=font_meta)[2]
+    draw.text((W - PAD - meta_w, date_y), meta, font=font_meta, fill=TEXT_SEC)
 
     # ── Divider ───────────────────────────────────────────────────────────────
     draw.rectangle([PAD, divider_y, W - PAD, divider_y + 2], fill=DIVIDER)
