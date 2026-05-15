@@ -1,11 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
 import { getTeamColor, TEAM_COLORS } from "@/lib/teamColors";
 import { ContributeShowMembers } from "@/components/theater/ContributeShowMembers";
 import { ContributeShowInfo } from "@/components/theater/ContributeShowInfo";
+import { ShareShowButton } from "@/components/theater/ShareShowButton";
 
 const TEAM_LABEL: Record<string, string> = {
   LOVE: "Team Love",
@@ -90,6 +92,8 @@ export default async function TheaterShowPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const cookieStore = await cookies();
+  const isAdmin = !!cookieStore.get("admin_key")?.value;
   const [schedule, adjacent, members, memberStats] = await Promise.all([
     getSchedule(id),
     getAdjacent(id),
@@ -208,14 +212,26 @@ export default async function TheaterShowPage({
                 </>
               )}
             </div>
-            {schedule.setlist_name && (
-              <Link
-                href={`/setlists/${encodeURIComponent(schedule.setlist_name)}`}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium hover:bg-primary hover:text-white transition-colors"
-              >
-                View Setlist →
-              </Link>
-            )}
+            <div className="flex gap-2 flex-wrap">
+              {schedule.setlist_name && (
+                <Link
+                  href={`/setlists/${encodeURIComponent(schedule.setlist_name)}`}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-secondary text-secondary-foreground text-xs font-medium hover:bg-primary hover:text-white transition-colors"
+                >
+                  View Setlist →
+                </Link>
+              )}
+              {isAdmin && (
+                <ShareShowButton
+                  showId={schedule.id}
+                  setlistName={schedule.setlist_name}
+                  showDate={schedule.show_date}
+                  showTime={schedule.show_time}
+                  members={schedule.members}
+                  memberStats={memberStats}
+                />
+              )}
+            </div>
           </div>
         </div>
 
