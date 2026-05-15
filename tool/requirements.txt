@@ -5,3 +5,4 @@ lxml
 nodriver
 setuptools
 tweepy
+Pillow
