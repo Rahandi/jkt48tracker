@@ -1,11 +1,10 @@
 """
-Post a weekly theater stats image to Twitter/X.
+Post a daily theater stats image to Twitter/X.
 
-Runs nightly. If no shows occurred today, exits silently.
-Use --preview to generate weekly_preview.png locally without posting.
+Use --preview to generate daily_preview.png locally without posting.
 
-Run manually:   python tool/tweet_weekly_stats.py --preview
-Run via cron:   0 16 * * * cd ~/jkt48tracker && set -a && source .env && set +a && INTERNAL_API_URL=http://localhost:8000/internal python3 tool/tweet_weekly_stats.py >> ~/jkt48tracker/tool/tweet_weekly_stats.log 2>&1
+Run manually:   python tool/tweet_daily_stats.py --preview
+Run via cron:   0 16 * * * cd ~/jkt48tracker && set -a && source .env && set +a && INTERNAL_API_URL=http://localhost:8000/internal python3 tool/tweet_daily_stats.py >> ~/jkt48tracker/tool/tweet_daily_stats.log 2>&1
 
 Required env vars: same as tweet_shows.py
 """
@@ -39,20 +38,20 @@ from tweet_shows import (
 
 # ── Image generation ──────────────────────────────────────────────────────────
 
-def generate_weekly_image(
-    members: list[dict],        # [{name, jkt48_id, week_count, total_count}]
+def generate_daily_image(
+    members: list[dict],        # [{name, jkt48_id, today_count, total_count}]
     image_url_lookup: dict[str, str],
-    date_range_str: str,        # e.g. "May 10 – May 16, 2026"
+    date_str: str,              # e.g. "16 Mei 2026"
 ) -> str:
     row_h    = 44
-    col_gap  = 30          # gap between the two columns
+    col_gap  = 30
     footer_h = 90
     col_w    = (W - PAD * 2 - col_gap) // 2
 
     # Pre-measure header height
     _probe       = ImageDraw.Draw(Image.new("RGB", (W, 100)))
     title_font   = _font(52, bold=True)
-    title_bottom = _probe.textbbox((PAD, 108), "Weekly Theater Stats", font=title_font)[3]
+    title_bottom = _probe.textbbox((PAD, 108), "Rekap Theater", font=title_font)[3]
     sub_h        = _probe.textbbox((0, 0), "Ay", font=_font(26))[3]
     date_y       = title_bottom + 10
     divider_y    = date_y + sub_h + 20
@@ -73,14 +72,14 @@ def generate_weekly_image(
     draw.text((PAD + 26, 46), "JKT48Tracker", font=_font(28, bold=True), fill=TEXT_PRI)
 
     # Title
-    draw.text((PAD, 108), "Weekly Theater Stats", font=title_font, fill=TEXT_PRI)
+    draw.text((PAD, 108), "Rekap Theater", font=title_font, fill=TEXT_PRI)
 
-    # Date range
-    draw.text((PAD, date_y), date_range_str, font=_font(26), fill=TEXT_SEC)
+    # Date
+    draw.text((PAD, date_y), date_str, font=_font(26), fill=TEXT_SEC)
 
     # Divider + label
     draw.rectangle([PAD, divider_y, W - PAD, divider_y + 2], fill=DIVIDER)
-    draw.text((PAD, label_y), f"ALL MEMBERS ({len(members)})", font=_font(18), fill=TEXT_SEC)
+    draw.text((PAD, label_y), f"SEMUA ANGGOTA ({len(members)})", font=_font(18), fill=TEXT_SEC)
 
     # Two-column member grid
     font_name  = _font(19)
@@ -93,10 +92,10 @@ def generate_weekly_image(
         col_x   = col_origins[col_idx]
         y       = member_start + row * row_h
 
-        jkt48_id   = m.get("jkt48_id") or ""
-        week_n     = m["week_count"]
-        total_n    = m["total_count"]
-        name_color = TEXT_PRI if week_n > 0 else TEXT_SEC
+        jkt48_id    = m.get("jkt48_id") or ""
+        today_n     = m["today_count"]
+        total_n     = m["total_count"]
+        name_color  = TEXT_PRI if today_n > 0 else TEXT_SEC
 
         # Avatar
         avatar = None
@@ -113,11 +112,10 @@ def generate_weekly_image(
         name_x = col_x + AVATAR_SIZE + 8
         draw.text((name_x, text_y), m["name"], font=font_name, fill=name_color)
 
-        # Stat right-aligned within column
-        stat = f"{week_n}w · {total_n}"
+        # Stat: "(+N) total" for members who performed today, else just "total"
+        stat = f"(+{today_n}) {total_n}" if today_n > 0 else f"{total_n}"
         tw   = _text_width(draw, stat, font_count)
-        col_right = col_x + col_w
-        draw.text((col_right - tw, text_y + 1), stat, font=font_count, fill=TEXT_SEC)
+        draw.text((col_x + col_w - tw, text_y + 1), stat, font=font_count, fill=TEXT_SEC)
 
     # Footer
     footer_y = canvas_h - footer_h
@@ -134,6 +132,15 @@ def generate_weekly_image(
     return tmp.name
 
 
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+_ID_MONTHS = ["Januari","Februari","Maret","April","Mei","Juni",
+              "Juli","Agustus","September","Oktober","November","Desember"]
+
+def _id_date(d: date) -> str:
+    return f"{d.day} {_ID_MONTHS[d.month - 1]} {d.year}"
+
+
 # ── API helpers ───────────────────────────────────────────────────────────────
 
 def _get_all_members() -> list[dict]:
@@ -145,8 +152,8 @@ def _get_all_members() -> list[dict]:
     ]
 
 
-def _get_weekly_stats(days: int = 7) -> dict[str, int]:
-    res = requests.get(f"{PUBLIC_API_URL}/theater-schedules/member-stats?days={days}", timeout=10)
+def _get_today_stats() -> dict[str, int]:
+    res = requests.get(f"{PUBLIC_API_URL}/theater-schedules/member-stats?days=1", timeout=10)
     res.raise_for_status()
     return {s["jkt48_id"]: s["show_count"] for s in res.json() if s.get("jkt48_id")}
 
@@ -155,16 +162,6 @@ def _get_cumulative_stats() -> dict[str, int]:
     res = requests.get(f"{PUBLIC_API_URL}/theater-schedules/member-stats", timeout=10)
     res.raise_for_status()
     return {s["jkt48_id"]: s["show_count"] for s in res.json() if s.get("jkt48_id")}
-
-
-def _get_todays_show_count() -> int:
-    today = date.today().isoformat()
-    res = requests.get(
-        f"{PUBLIC_API_URL}/theater-schedules?past=true&limit=10",
-        timeout=10,
-    )
-    res.raise_for_status()
-    return sum(1 for s in res.json() if s.get("show_date") == today)
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -181,42 +178,31 @@ def main():
             print(f"Missing Twitter env vars: {', '.join(missing)}", file=sys.stderr)
             sys.exit(1)
 
-    # Check if any shows happened today (skipped in preview mode)
-    if not preview:
-        today_count = _get_todays_show_count()
-        if today_count == 0:
-            print("No shows today — skipping weekly stats post.")
-            return
+    today    = date.today()
+    date_str = _id_date(today)
 
-    # Date range: last 7 days
-    today      = date.today()
-    week_start = today - timedelta(days=6)
-    date_range = f"{week_start.strftime('%b %-d')} – {today.strftime('%b %-d, %Y')}"
-
-    # Fetch data
-    all_members      = _get_all_members()
-    weekly_lookup    = _get_weekly_stats(days=7)
+    all_members       = _get_all_members()
+    today_lookup      = _get_today_stats()
     cumulative_lookup = _get_cumulative_stats()
-    image_url_lookup = _get_member_image_urls()
+    image_url_lookup  = _get_member_image_urls()
 
-    # Merge and sort
     merged = []
     for m in all_members:
         jkt48_id = m.get("jkt48_id") or ""
         merged.append({
             "name":        m["name"],
             "jkt48_id":    jkt48_id,
-            "week_count":  weekly_lookup.get(jkt48_id, 0),
+            "today_count": today_lookup.get(jkt48_id, 0),
             "total_count": cumulative_lookup.get(jkt48_id, 0),
         })
-    merged.sort(key=lambda m: (-m["week_count"], -m["total_count"]))
+    merged.sort(key=lambda m: (-m["total_count"], -m["today_count"]))
 
-    print(f"Generating weekly stats image for {date_range} ({len(merged)} members)...")
-    img_path = generate_weekly_image(merged, image_url_lookup, date_range)
+    print(f"Generating daily stats image for {date_str} ({len(merged)} members)...")
+    img_path = generate_daily_image(merged, image_url_lookup, date_str)
 
     if preview:
         import shutil
-        dest = os.path.join(os.path.dirname(__file__), "..", "weekly_preview.png")
+        dest = os.path.join(os.path.dirname(__file__), "..", "daily_preview.png")
         shutil.copy(img_path, dest)
         os.unlink(img_path)
         print(f"Preview saved to: {os.path.abspath(dest)}")
@@ -226,9 +212,9 @@ def main():
         api    = _twitter_api()
         client = _twitter_client()
         media  = api.media_upload(filename=img_path)
-        caption = f"JKT48 Weekly Theater Stats | {date_range}\n\n#JKT48 #JKT48Tracker_Theater"
+        caption = f"Rekap Theater JKT48 | {date_str}\n\n#JKT48 #JKT48Tracker_Theater"
         client.create_tweet(text=caption, media_ids=[media.media_id_string])
-        print(f"Tweeted weekly stats for {date_range}")
+        print(f"Tweeted daily stats for {date_str}")
     finally:
         os.unlink(img_path)
 
