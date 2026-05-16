@@ -343,7 +343,7 @@ export default async function HomePage() {
               </span>
               <span className="text-xs text-muted-foreground">next 30 days</span>
             </div>
-            <div className="flex gap-3 overflow-x-auto py-3 px-2 scrollbar-none">
+            <div className="flex gap-3 overflow-x-auto pt-3 pb-1 px-2 scrollbar-none">
               {upcomingBirthdays.map((b) => {
                 const color = getTeamColor(b.team);
                 const label = b.days_until === 0 ? "Today!" : b.days_until === 1 ? "Tomorrow" : `in ${b.days_until}d`;
@@ -393,7 +393,7 @@ export default async function HomePage() {
         </div>
       )}
 
-      <main className="px-4 pb-12 sm:px-6 max-w-7xl mx-auto">
+      <main className="px-4 pt-6 pb-12 sm:px-6 max-w-7xl mx-auto">
         {/* ── Top Performers ───────────────────────────────── */}
         <div className="mb-6">
           <TopPerformers memberStats={memberStats} memberMap={memberMap} />
