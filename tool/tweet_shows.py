@@ -265,10 +265,18 @@ def _twitter_api() -> tweepy.API:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+def _get_latest_past_show() -> dict | None:
+    res = requests.get(f"{PUBLIC_API_URL}/theater-schedules/?past=true&limit=1", timeout=10)
+    res.raise_for_status()
+    items = res.json()
+    return items[0] if items else None
+
+
 def main():
     mark_only = "--mark-only" in sys.argv
+    preview   = "--preview" in sys.argv
 
-    if not mark_only:
+    if not mark_only and not preview:
         missing = [k for k in (
             "TWITTER_API_KEY", "TWITTER_API_SECRET",
             "TWITTER_ACCESS_TOKEN", "TWITTER_ACCESS_TOKEN_SECRET",
@@ -276,6 +284,21 @@ def main():
         if missing:
             print(f"Missing Twitter env vars: {', '.join(missing)}", file=sys.stderr)
             sys.exit(1)
+
+    if preview:
+        show = _get_latest_past_show()
+        if not show:
+            print("No past shows found.")
+            return
+        stat_lookup      = _get_member_stats()
+        image_url_lookup = _get_member_image_urls()
+        img_path = generate_show_image(show, stat_lookup, image_url_lookup)
+        import shutil
+        dest = os.path.join(os.path.dirname(__file__), "..", "show_preview.png")
+        shutil.copy(img_path, dest)
+        os.unlink(img_path)
+        print(f"Preview saved to: {os.path.abspath(dest)}")
+        return
 
     shows = _get_untweeted()
     if not shows:
@@ -295,7 +318,7 @@ def main():
                 try:
                     media = api.media_upload(filename=img_path)
                     date_str = _format_date(show["show_date"]) if show.get("show_date") else ""
-                    caption = f"{label} | {date_str}\n\n#JKT48 #JKT48Tracker_Theater"
+                    caption = "#JKT48 #JKT48Tracker #JKT48ShowTheater"
                     client.create_tweet(text=caption, media_ids=[media.media_id_string])
                     print(f"Tweeted: {label} ({show.get('show_date')} {show.get('show_time')})")
                 finally:

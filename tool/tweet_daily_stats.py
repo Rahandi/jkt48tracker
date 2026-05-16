@@ -87,8 +87,8 @@ def generate_daily_image(
     col_origins = [PAD, PAD + col_w + col_gap]
 
     for idx, m in enumerate(members):
-        row     = idx // 2
-        col_idx = idx % 2
+        col_idx = idx // n_rows
+        row     = idx % n_rows
         col_x   = col_origins[col_idx]
         y       = member_start + row * row_h
 
@@ -212,7 +212,7 @@ def main():
         api    = _twitter_api()
         client = _twitter_client()
         media  = api.media_upload(filename=img_path)
-        caption = f"Rekap Theater JKT48 | {date_str}\n\n#JKT48 #JKT48Tracker_Theater"
+        caption = "#JKT48 #JKT48Tracker #JKT48RekapTheater"
         client.create_tweet(text=caption, media_ids=[media.media_id_string])
         print(f"Tweeted daily stats for {date_str}")
     finally:
