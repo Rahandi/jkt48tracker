@@ -34,8 +34,13 @@ async def list_theater_schedules(
 
 
 @router.get("/member-stats")
-async def get_member_stats(service: TheaterScheduleService = Depends()):
-    return service.get_member_stats()
+async def get_member_stats(
+    days: int | None = Query(None, ge=1),
+    service: TheaterScheduleService = Depends(),
+):
+    from datetime import date, timedelta
+    since_date = date.today() - timedelta(days=days) if days else None
+    return service.get_member_stats(since_date=since_date)
 
 
 @router.get("/stats/by-year")

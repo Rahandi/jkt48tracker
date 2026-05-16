@@ -20,8 +20,8 @@ class TheaterScheduleService:
   def get_detail(self, schedule_id: int):
     return self.repo.get_detail(schedule_id)
 
-  def get_member_stats(self):
-    return self.repo.get_member_stats()
+  def get_member_stats(self, since_date=None):
+    return self.repo.get_member_stats(since_date=since_date)
 
   def get_shows_by_year(self):
     return self.repo.get_shows_by_year()

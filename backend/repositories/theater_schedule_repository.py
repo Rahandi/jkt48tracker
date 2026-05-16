@@ -277,8 +277,15 @@ class TheaterScheduleRepository:
     )
     return [{"setlist_name": r.setlist_name, "count": r.count} for r in self.db.execute(stmt).all()]
 
-  def get_member_stats(self) -> list[dict]:
+  def get_member_stats(self, since_date=None) -> list[dict]:
     """Members ranked by number of distinct shows they appear in."""
+    filters = [
+      TheaterScheduleMember.deleted_at.is_(None),
+      TheaterSchedule.deleted_at.is_(None),
+      _performed_filter(),
+    ]
+    if since_date is not None:
+      filters.append(TheaterSchedule.show_date >= since_date)
     stmt = (
       select(
         TheaterScheduleMember.jkt48_id,
@@ -286,11 +293,7 @@ class TheaterScheduleRepository:
         func.count(distinct(TheaterScheduleMember.theater_schedule_id)).label("show_count"),
       )
       .join(TheaterSchedule, TheaterSchedule.id == TheaterScheduleMember.theater_schedule_id)
-      .where(
-        TheaterScheduleMember.deleted_at.is_(None),
-        TheaterSchedule.deleted_at.is_(None),
-        _performed_filter(),
-      )
+      .where(*filters)
       .group_by(TheaterScheduleMember.jkt48_id, TheaterScheduleMember.name)
       .order_by(func.count(distinct(TheaterScheduleMember.theater_schedule_id)).desc())
     )
