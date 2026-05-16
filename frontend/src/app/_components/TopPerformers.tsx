@@ -73,7 +73,7 @@ export function TopPerformers({
               No data yet.
             </p>
           ) : (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-x-8">
+            <div className="grid sm:grid-cols-2 sm:grid-flow-col sm:grid-rows-[15] lg:grid-cols-3 lg:grid-rows-[10] sm:gap-x-8">
             {filtered.slice(0, 30).map((ms, i) => {
               const info = ms.jkt48_id ? memberMap.get(ms.jkt48_id) : undefined;
               const isGraduated = !ms.jkt48_id || !memberMap.has(ms.jkt48_id);
