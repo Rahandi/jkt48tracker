@@ -1,1 +1,0 @@
-{"nodes": [{"id": "internal_auth_require_api_key", "label": "require_api_key", "file_type": "code", "source_file": "backend/routes/internal/auth.py", "source_location": "6", "source_url": null, "captured_at": null, "author": null, "contributor": null}], "edges": [], "hyperedges": []}

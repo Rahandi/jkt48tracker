@@ -2,3 +2,6 @@ __pycache__
 .env
 .venv
 *.db
+*.log
+graphify-out/
+/*.png
