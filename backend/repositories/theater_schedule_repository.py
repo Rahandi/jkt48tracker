@@ -279,6 +279,7 @@ class TheaterScheduleRepository:
 
   def get_member_stats(self, since_date=None) -> list[dict]:
     """Members ranked by number of distinct shows they appear in."""
+    from sqlalchemy import case as sa_case
     filters = [
       TheaterScheduleMember.deleted_at.is_(None),
       TheaterSchedule.deleted_at.is_(None),
@@ -286,15 +287,21 @@ class TheaterScheduleRepository:
     ]
     if since_date is not None:
       filters.append(TheaterSchedule.show_date >= since_date)
+    # Group by jkt48_id when set (avoids splitting one member across name variants),
+    # fall back to name for graduated/unlinked members who have no jkt48_id.
+    group_key = sa_case(
+      (TheaterScheduleMember.jkt48_id.isnot(None), TheaterScheduleMember.jkt48_id),
+      else_=TheaterScheduleMember.name,
+    )
     stmt = (
       select(
-        TheaterScheduleMember.jkt48_id,
-        TheaterScheduleMember.name,
+        func.max(TheaterScheduleMember.jkt48_id).label("jkt48_id"),
+        func.max(TheaterScheduleMember.name).label("name"),
         func.count(distinct(TheaterScheduleMember.theater_schedule_id)).label("show_count"),
       )
       .join(TheaterSchedule, TheaterSchedule.id == TheaterScheduleMember.theater_schedule_id)
       .where(*filters)
-      .group_by(TheaterScheduleMember.jkt48_id, TheaterScheduleMember.name)
+      .group_by(group_key)
       .order_by(func.count(distinct(TheaterScheduleMember.theater_schedule_id)).desc())
     )
     return [
