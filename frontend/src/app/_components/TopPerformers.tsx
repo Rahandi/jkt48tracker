@@ -91,7 +91,7 @@ export function TopPerformers({
                       alt={ms.name}
                       width={32}
                       height={32}
-                      className="w-8 h-8 rounded-full object-cover shrink-0"
+                      className="w-8 h-8 rounded-full object-cover object-[center_15%] shrink-0"
                     />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-muted shrink-0 flex items-center justify-center">

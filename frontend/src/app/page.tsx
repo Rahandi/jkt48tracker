@@ -132,7 +132,7 @@ function ShowCard({
                     alt={m.name}
                     width={28}
                     height={28}
-                    className="w-7 h-7 rounded-full object-cover ring-2 ring-card"
+                    className="w-7 h-7 rounded-full object-cover object-[center_15%] ring-2 ring-card"
                   />
                 ) : (
                   <div
@@ -236,7 +236,7 @@ export default async function HomePage() {
                         alt={m.name}
                         width={36}
                         height={36}
-                        className="w-9 h-9 rounded-full object-cover ring-2 ring-background"
+                        className="w-9 h-9 rounded-full object-cover object-[center_15%] ring-2 ring-background"
                       />
                     ))}
                   </div>
@@ -304,7 +304,7 @@ export default async function HomePage() {
                                 alt={m.name}
                                 width={24}
                                 height={24}
-                                className="w-6 h-6 rounded-full object-cover ring-1 ring-card"
+                                className="w-6 h-6 rounded-full object-cover object-[center_15%] ring-1 ring-card"
                               />
                             ) : (
                               <div
