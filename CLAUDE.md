@@ -30,11 +30,14 @@ frontend/src/app/ Next.js App Router pages
   _components/    Client components (TopPerformers, etc.)
 
 tool/             Standalone Python scripts (run on host or via Docker)
-  theater.py      Scrapes jkt48.com → syncs shows to backend
-  member.py       Scrapes jkt48.com/member (headless Chrome via nodriver)
-  tweet_daily_stats.py   Posts daily member stats image to Twitter
-  tweet_shows.py  Show tweet card generator (cron disabled; kept for manual use)
-  Dockerfile.tweet       Lightweight image for tweet scripts
+  theater.py           Scrapes jkt48.com → syncs shows to backend
+  member.py            Scrapes jkt48.com/member (headless Chrome via nodriver)
+  tweet_daily_stats.py Posts daily member stats image to Twitter
+  tweet_shows.py       Show tweet card generator (cron disabled; kept for manual use)
+  checkpoint.py        Snapshot/verify member show counts (--save / --check)
+  checkpoint.json      Latest saved snapshot (committed to git, update after data fixes)
+  fill_missing_members.py  Backfills show member data for shows with 0 members
+  Dockerfile.tweet     Lightweight image for tweet scripts
 
 local/            Local dev Docker Compose (make build/up/down/migrate)
 docs/             jkt48.com API reference
@@ -76,6 +79,8 @@ Frontend runs separately: `cd frontend && npm run dev`
 - `jkt48_id` format: `slug-name-{numeric_id}` e.g. `freya-jaegar-123`
 - Internal API requires `X-Api-Key` header matching `INTERNAL_API_KEY` env var
 - Schema changes need an Alembic migration; new sync fields need explicit Pydantic model declaration
+- `get_member_stats()` groups by `CASE WHEN jkt48_id IS NOT NULL THEN jkt48_id ELSE name END` — handles members whose name was stored differently across shows
+- Member stats include shows with `show_date IS NULL` (historical shows missing date data) — this is intentional; Feni's 740 includes 149 such shows
 
 **Frontend:**
 - `fetch()` calls use `{ cache: "no-store" }` for schedule data (avoid stale shows)
@@ -86,9 +91,17 @@ Frontend runs separately: `cd frontend && npm run dev`
 **Twitter automation:**
 - No URLs in tweet captions — costs $0.20/tweet vs $0.015 without
 - Daily stats: caption = `#JKT48 #JKT48Tracker #JKT48RekapTheater`
-- Show card: caption = `#JKT48 #JKT48Tracker #JKT48ShowTheater`
+- Show card: caption = `#JKT48 #JKT48Tracker #JKT48ShowTheater` (show cron disabled)
 - Image design: light theme (`#f7f3f4` bg, `#e4002b` accent), circular 32px avatars
+- Daily stats grid: column-major order (left column fills top-to-bottom first)
 - Tools Docker image: `ghcr.io/rahandi/jkt48tracker-tools:latest` — rebuilt by CI on changes to `tool/tweet_*.py` or `tool/Dockerfile.tweet`
+- Cron pulls image before running: `docker pull ... && docker run --rm --env-file ~/jkt48tracker/.env ...`
+- GHCR auth needed for pull: cron sources `.env` and runs `echo $GHCR_TOKEN | docker login ghcr.io -u $GHCR_USER --password-stdin`
+
+**Data integrity:**
+- Run `python3 tool/checkpoint.py --check` to verify no show counts have decreased
+- Run `python3 tool/checkpoint.py --save` + commit after confirming data is clean
+- Snapshot at 2026-05-17: 218 members, Feni Fitriyanti #1 at 740 shows
 
 ## Member Teams
 
