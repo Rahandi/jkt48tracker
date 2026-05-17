@@ -39,7 +39,7 @@ async def get_member_stats(
     service: TheaterScheduleService = Depends(),
 ):
     from datetime import date, timedelta
-    since_date = date.today() - timedelta(days=days) if days else None
+    since_date = date.today() - timedelta(days=days - 1) if days else None
     return service.get_member_stats(since_date=since_date)
 
 
