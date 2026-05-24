@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
 import { getTeamColor, TEAM_COLORS } from "@/lib/teamColors";
+import { isAtMilestone } from "@/lib/milestones";
 import { ContributeShowMembers } from "@/components/theater/ContributeShowMembers";
 import { ContributeShowInfo } from "@/components/theater/ContributeShowInfo";
 import { ShareShowButton } from "@/components/theater/ShareShowButton";
@@ -336,6 +337,9 @@ export default async function TheaterShowPage({
                     {stat && (
                       <p className="text-[9px] text-muted-foreground mt-0.5">
                         #{stat.rank} · {stat.show_count}×
+                        {isAtMilestone(stat.show_count) && (
+                          <span className="text-amber-500 font-bold ml-0.5">★</span>
+                        )}
                       </p>
                     )}
                   </div>

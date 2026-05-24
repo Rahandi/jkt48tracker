@@ -8,8 +8,8 @@ class MemberService:
   def __init__(self, db: Session = Depends(get_session)):
     self.member_repository = MemberRepository(db)
 
-  def get_all(self, team: str | None = None):
-    return self.member_repository.get_all(team=team)
+  def get_all(self, team: str | None = None, generation: str | None = None):
+    return self.member_repository.get_all(team=team, generation=generation)
 
   def get_by_id(self, member_id: int):
     return self.member_repository.get_by_id(member_id)

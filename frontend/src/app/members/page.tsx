@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { MembersByShowCountChart } from "@/components/charts/MembersByShowCountChart";
 import { MemberSearch } from "@/components/members/MemberSearch";
+import { MemberSortToggle } from "@/components/members/MemberSortToggle";
+import { isAtMilestone, showsUntilMilestone } from "@/lib/milestones";
 import { getTeamColor, TEAM_COLORS } from "@/lib/teamColors";
 
 const TEAMS = [
@@ -15,6 +17,21 @@ const TEAMS = [
   { key: "passion", label: "Team Passion" },
   { key: "trainee", label: "Trainee" },
   { key: "jkt48_virtual", label: "JKT48 Virtual" },
+];
+
+const GENERATIONS = [
+  { key: "3", label: "Gen 3" },
+  { key: "6", label: "Gen 6" },
+  { key: "7", label: "Gen 7" },
+  { key: "8", label: "Gen 8" },
+  { key: "9", label: "Gen 9" },
+  { key: "10", label: "Gen 10" },
+  { key: "11", label: "Gen 11" },
+  { key: "12", label: "Gen 12" },
+  { key: "13", label: "Gen 13" },
+  { key: "14", label: "Gen 14" },
+  { key: "jkt48v-1", label: "JKT48V Gen 1" },
+  { key: "jkt48v-2", label: "JKT48V Gen 2" },
 ];
 
 type Member = {
@@ -30,10 +47,13 @@ type Member = {
 
 type MemberStat = { jkt48_id: string | null; name: string; show_count: number };
 
-async function getMembers(team?: string): Promise<Member[]> {
+async function getMembers(team?: string, generation?: string): Promise<Member[]> {
   if (!process.env.BACKEND_URL) return [];
-  const params = team ? `?team=${team}` : "";
-  const res = await fetch(`${process.env.BACKEND_URL}/api/members/${params}`, {
+  const params = new URLSearchParams();
+  if (team) params.set("team", team);
+  if (generation) params.set("generation", generation);
+  const query = params.size ? `?${params}` : "";
+  const res = await fetch(`${process.env.BACKEND_URL}/api/members/${query}`, {
     next: { revalidate: 3600 },
   });
   if (!res.ok) return [];
@@ -53,11 +73,11 @@ async function getMemberStats(): Promise<MemberStat[]> {
 export default async function MembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ team?: string; q?: string }>;
+  searchParams: Promise<{ team?: string; q?: string; sort?: string; gen?: string }>;
 }) {
-  const { team = "", q = "" } = await searchParams;
+  const { team = "", q = "", sort = "", gen = "" } = await searchParams;
   const [members, allStats] = await Promise.all([
-    getMembers(team || undefined),
+    getMembers(team || undefined, gen || undefined),
     getMemberStats(),
   ]);
 
@@ -75,6 +95,14 @@ export default async function MembersPage({
       )
     : members;
 
+  const displayed =
+    sort === "shows"
+      ? [...filtered].sort(
+          (a, b) =>
+            (showCountMap.get(b.jkt48_id) ?? 0) - (showCountMap.get(a.jkt48_id) ?? 0)
+        )
+      : filtered;
+
   return (
     <div className="min-h-screen">
       <main className="px-4 py-6 sm:px-6 max-w-7xl mx-auto">
@@ -82,24 +110,32 @@ export default async function MembersPage({
           <h1 className="text-2xl font-bold text-foreground">Members</h1>
           <span className="text-sm text-muted-foreground">
             {filtered.length}{" "}
-            {team ? TEAMS.find((t) => t.key === team)?.label : "total"}
+            {gen
+              ? GENERATIONS.find((g) => g.key === gen)?.label
+              : team
+              ? TEAMS.find((t) => t.key === team)?.label
+              : "total"}
           </span>
         </div>
 
         {/* Team tabs */}
-        <div className="flex gap-2 flex-wrap mb-4">
+        <div className="flex gap-2 flex-wrap mb-2">
           {TEAMS.map((t) => {
             const active = team === t.key;
             const color = t.key ? TEAM_COLORS[t.key.toUpperCase()] : null;
             return (
               <Link
                 key={t.key}
-                href={t.key ? `/members?team=${t.key}` : "/members"}
+                href={(() => {
+                  const p = new URLSearchParams();
+                  if (t.key) p.set("team", t.key);
+                  if (sort) p.set("sort", sort);
+                  if (gen) p.set("gen", gen);
+                  return `/members${p.size ? `?${p}` : ""}`;
+                })()}
                 style={
                   active && color
                     ? { backgroundColor: color.bg, color: color.text, borderColor: color.hex + "60" }
-                    : active
-                    ? undefined
                     : undefined
                 }
                 className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors border ${
@@ -116,14 +152,49 @@ export default async function MembersPage({
           })}
         </div>
 
-        {/* Search */}
-        <MemberSearch defaultValue={q} team={team} />
+        {/* Generation filter */}
+        <div className="flex gap-2 flex-wrap mb-4">
+          {GENERATIONS.map((g) => {
+            const active = gen === g.key;
+            return (
+              <Link
+                key={g.key}
+                href={(() => {
+                  const p = new URLSearchParams();
+                  if (team) p.set("team", team);
+                  if (sort) p.set("sort", sort);
+                  if (active) {
+                    // clicking active gen clears it
+                  } else {
+                    p.set("gen", g.key);
+                  }
+                  return `/members${p.size ? `?${p}` : ""}`;
+                })()}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${
+                  active
+                    ? "bg-primary/15 text-primary border-primary/40"
+                    : "bg-secondary/60 text-muted-foreground hover:text-foreground hover:bg-secondary border-transparent"
+                }`}
+              >
+                {g.label}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Search + Sort */}
+        <div className="flex gap-2 items-center">
+          <MemberSearch defaultValue={q} team={team} sort={sort} gen={gen} />
+          <MemberSortToggle currentSort={sort} team={team} q={q} gen={gen} />
+        </div>
 
         {/* Chart — hidden only when searching */}
         {!q && activeStats.length > 0 && (
           <div className="mb-8 mt-6">
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-              {team
+              {gen
+                ? `${GENERATIONS.find((g) => g.key === gen)?.label} — by Show Count`
+                : team
                 ? `${TEAMS.find((t) => t.key === team)?.label} — by Show Count`
                 : "Top Active Members by Show Count"}
             </h2>
@@ -147,8 +218,11 @@ export default async function MembersPage({
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-9 gap-3 mt-6">
-            {filtered.map((member) => {
+            {displayed.map((member) => {
               const teamColor = getTeamColor(member.team);
+              const showCount = showCountMap.get(member.jkt48_id);
+              const atMilestone = showCount !== undefined && isAtMilestone(showCount);
+              const nearMilestone = showCount !== undefined && !atMilestone && showsUntilMilestone(showCount) <= 10;
               return (
               <Link key={member.jkt48_id} href={`/members/${member.jkt48_id}`}>
                 <Card className="group hover:ring-2 hover:ring-primary/60 transition-all duration-200 cursor-pointer overflow-hidden gap-0 py-0 rounded-xl">
@@ -188,12 +262,18 @@ export default async function MembersPage({
                           {member.blood_type}
                         </Badge>
                       )}
-                      {showCountMap.has(member.jkt48_id) && (
+                      {showCount !== undefined && (
                         <Badge
                           variant="secondary"
-                          className="text-[9px] h-3.5 px-1 rounded-full"
+                          className={`text-[9px] h-3.5 px-1 rounded-full ${
+                            atMilestone
+                              ? "bg-amber-500 text-white border-transparent"
+                              : nearMilestone
+                              ? "ring-1 ring-amber-400/70"
+                              : ""
+                          }`}
                         >
-                          {showCountMap.get(member.jkt48_id)}×
+                          {atMilestone ? `✦ ${showCount}` : `${showCount}×`}
                         </Badge>
                       )}
                     </div>

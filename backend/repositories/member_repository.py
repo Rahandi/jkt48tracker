@@ -30,10 +30,12 @@ class MemberRepository:
   def __init__(self, db: Session):
     self.db = db
 
-  def get_all(self, team: str | None = None):
+  def get_all(self, team: str | None = None, generation: str | None = None):
     statement = select(Member).where(Member.deleted_at.is_(None))
     if team:
       statement = statement.where(Member.team == team.upper())
+    if generation:
+      statement = statement.where(Member.generation == generation)
     result = self.db.execute(statement)
     return result.scalars().all()
 

@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/utils";
 import { TopPerformers } from "./_components/TopPerformers";
 import { ShowsByYearChart } from "@/components/charts/ShowsByYearChart";
 import { getTeamColor } from "@/lib/teamColors";
+import { isAtMilestone, findMilestoneShow, showsUntilMilestone } from "@/lib/milestones";
 
 type Member = {
   id: number;
@@ -181,6 +182,55 @@ export default async function HomePage() {
     .slice(0, 12)
     .map((ms) => memberMap.get(ms.jkt48_id as string)!)
     .filter(Boolean);
+
+  // ── Milestones ────────────────────────────────────────────────
+  const memberStatsMap = new Map(memberStats.map((s) => [s.jkt48_id, s.show_count]));
+  const todayWIB = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+
+  // Members performing today (ongoing + past shows today)
+  const todayShowMemberIds = new Set<string>();
+  for (const s of [...ongoingSchedules, ...pastSchedules.filter((s) => s.show_date === todayWIB)]) {
+    for (const m of s.members) {
+      if (m.jkt48_id) todayShowMemberIds.add(m.jkt48_id);
+    }
+  }
+
+  // Today's milestones: performing today AND count is exactly a multiple of 100
+  const todayMilestones = [...todayShowMemberIds]
+    .flatMap((jkt48_id) => {
+      const count = memberStatsMap.get(jkt48_id);
+      if (count === undefined || !isAtMilestone(count)) return [];
+      const member = memberMap.get(jkt48_id);
+      if (!member) return [];
+      return [{ member, count }];
+    });
+
+  // Nearing milestones: will hit a milestone in an upcoming show within 7 days
+  const sortedUpcoming = [...upcomingSchedules].sort((a, b) => {
+    const da = a.show_date ?? "";
+    const db = b.show_date ?? "";
+    if (da !== db) return da.localeCompare(db);
+    return (a.show_time ?? "").localeCompare(b.show_time ?? "");
+  });
+
+  const nearingMilestones: Array<{
+    member: Member;
+    milestoneCount: number;
+    showsAway: number;
+    showDate: string;
+    showId: number;
+  }> = [];
+  for (const stat of memberStats) {
+    if (!stat.jkt48_id || isAtMilestone(stat.show_count)) continue;
+    const member = memberMap.get(stat.jkt48_id);
+    if (!member) continue;
+    const memberUpcoming = sortedUpcoming.filter((s) =>
+      s.members.some((m) => m.jkt48_id === stat.jkt48_id)
+    );
+    const ms = findMilestoneShow(stat.show_count, memberUpcoming, 7);
+    if (ms) nearingMilestones.push({ member, ...ms });
+  }
+  nearingMilestones.sort((a, b) => a.showsAway - b.showsAway);
 
   return (
     <div className="min-h-screen">
@@ -393,6 +443,110 @@ export default async function HomePage() {
         </div>
       )}
 
+      {/* ── Milestones ──────────────────────────────────── */}
+      {(todayMilestones.length > 0 || nearingMilestones.length > 0) && (
+        <div className="border-b border-border bg-secondary/30 py-4">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            {todayMilestones.length > 0 && (
+              <>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Today&#39;s Milestones
+                  </span>
+                  <span className="text-xs font-bold text-amber-500">★</span>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-1 px-2 scrollbar-none mb-4">
+                  {todayMilestones.map(({ member, count }) => (
+                    <Link
+                      key={member.jkt48_id}
+                      href={`/members/${member.jkt48_id}`}
+                      className="flex flex-col items-center gap-1.5 shrink-0 group"
+                    >
+                      <div
+                        className="relative w-12 h-12 transition-transform duration-200 group-hover:scale-110"
+                        style={{ outline: "2px solid #f59e0b", outlineOffset: "2px", borderRadius: "50%" }}
+                      >
+                        {member.image_url ? (
+                          <Image
+                            src={member.image_url}
+                            alt={member.name}
+                            width={48}
+                            height={48}
+                            className="w-full h-full object-cover object-[center_15%]"
+                            style={{ clipPath: "circle(50%)" }}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center" style={{ clipPath: "circle(50%)" }}>
+                            <span className="text-sm font-semibold text-muted-foreground">{member.name[0]}</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-amber-400/20 flex items-center justify-center" style={{ clipPath: "circle(50%)" }}>
+                          <span className="text-base">★</span>
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[10px] font-medium text-foreground leading-tight truncate w-14">
+                          {member.nickname ?? member.name.split(" ")[0]}
+                        </p>
+                        <p className="text-[9px] font-bold mt-0.5 text-amber-600">{count} shows</p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+            {nearingMilestones.length > 0 && (
+              <>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Nearing Milestone
+                  </span>
+                  <span className="text-xs text-muted-foreground">this week</span>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-1 px-2 scrollbar-none">
+                  {nearingMilestones.map(({ member, milestoneCount, showsAway, showDate }) => (
+                      <Link
+                        key={member.jkt48_id}
+                        href={`/members/${member.jkt48_id}`}
+                        className="flex flex-col items-center gap-1.5 shrink-0 group"
+                      >
+                        <div
+                          className="relative w-12 h-12 transition-transform duration-200 group-hover:scale-110"
+                          style={{ outline: "2px solid var(--border)", outlineOffset: "2px", borderRadius: "50%" }}
+                        >
+                          {member.image_url ? (
+                            <Image
+                              src={member.image_url}
+                              alt={member.name}
+                              width={48}
+                              height={48}
+                              className="w-full h-full object-cover object-[center_15%]"
+                              style={{ clipPath: "circle(50%)" }}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-muted flex items-center justify-center" style={{ clipPath: "circle(50%)" }}>
+                              <span className="text-sm font-semibold text-muted-foreground">{member.name[0]}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[10px] font-medium text-foreground leading-tight truncate w-14">
+                            {member.nickname ?? member.name.split(" ")[0]}
+                          </p>
+                          <p className="text-[9px] font-semibold mt-0.5 text-foreground">{milestoneCount}★</p>
+                          <p className="text-[9px] text-muted-foreground">
+                            {showsAway === 1 ? "next show" : `${showsAway} away`} · {showDate.slice(5).replace("-", "/")}
+                          </p>
+                        </div>
+                      </Link>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <main className="px-4 pt-6 pb-12 sm:px-6 max-w-7xl mx-auto">
         {/* ── Top Performers ───────────────────────────────── */}
         <div className="mb-6">
@@ -463,6 +617,14 @@ export default async function HomePage() {
                 {upcomingSchedules.slice(0, 5).map((s) => (
                   <ShowCard key={s.id} s={s} memberMap={memberMap} />
                 ))}
+                {upcomingSchedules.length > 5 && (
+                  <Link
+                    href="/theater"
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors text-center py-1"
+                  >
+                    +{upcomingSchedules.length - 5} more upcoming show{upcomingSchedules.length - 5 !== 1 ? "s" : ""} →
+                  </Link>
+                )}
               </div>
             )}
           </section>

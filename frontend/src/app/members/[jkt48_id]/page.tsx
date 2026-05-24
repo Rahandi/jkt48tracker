@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { formatDate, calcAge } from "@/lib/utils";
+import { isAtMilestone, nextMilestone, showsUntilMilestone, findMilestoneShow } from "@/lib/milestones";
 import { ShowsByYearChart } from "@/components/charts/ShowsByYearChart";
 import { getTeamColor } from "@/lib/teamColors";
 
@@ -148,6 +149,16 @@ export default async function MemberPage({
 
   const rank = allStats.findIndex((s) => s.jkt48_id === jkt48_id) + 1;
   const teamColor = getTeamColor(member.team);
+
+  // Milestone progress
+  const myCount = theaterStats.total;
+  const sortedUpcomingShows = [...upcomingShows].sort((a, b) => {
+    const da = a.show_date ?? "";
+    const db = b.show_date ?? "";
+    if (da !== db) return da.localeCompare(db);
+    return (a.show_time ?? "").localeCompare(b.show_time ?? "");
+  });
+  const milestoneShow = myCount > 0 ? findMilestoneShow(myCount, sortedUpcomingShows, 7) : null;
 
   return (
     <div className="min-h-screen">
@@ -295,6 +306,55 @@ export default async function MemberPage({
                   Help complete the data.
                 </a>
               </p>
+            )}
+          </div>
+        )}
+
+        {/* Milestone Progress */}
+        {myCount > 0 && (
+          <div className="mt-10">
+            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+              Milestone Progress
+            </h2>
+            {isAtMilestone(myCount) ? (
+              <div className="rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 px-4 py-3">
+                <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                  ★ Reached {myCount} shows!
+                </p>
+                <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-0.5">
+                  Next milestone: {nextMilestone(myCount)} shows
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-xl bg-card ring-1 ring-border px-4 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-foreground">
+                    {myCount} <span className="text-muted-foreground font-normal">/ {nextMilestone(myCount)}</span>
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {showsUntilMilestone(myCount)} to go
+                  </span>
+                </div>
+                <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full"
+                    style={{ width: `${myCount % 100}%` }}
+                  />
+                </div>
+                {milestoneShow && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Reaching{" "}
+                    <span className="font-semibold text-foreground">{milestoneShow.milestoneCount}</span>{" "}
+                    on{" "}
+                    <Link href={`/theater/${milestoneShow.showId}`} className="text-primary hover:underline">
+                      {formatDate(milestoneShow.showDate)}
+                    </Link>
+                    {milestoneShow.showsAway > 1 && (
+                      <span className="text-muted-foreground"> ({milestoneShow.showsAway} shows away)</span>
+                    )}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         )}

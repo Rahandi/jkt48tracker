@@ -6,9 +6,13 @@ import { useTransition } from "react";
 export function MemberSearch({
   defaultValue,
   team,
+  sort,
+  gen,
 }: {
   defaultValue: string;
   team: string;
+  sort: string;
+  gen: string;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -18,6 +22,8 @@ export function MemberSearch({
     const params = new URLSearchParams();
     if (team) params.set("team", team);
     if (q) params.set("q", q);
+    if (sort) params.set("sort", sort);
+    if (gen) params.set("gen", gen);
     startTransition(() => {
       router.push(`/members${params.size ? `?${params}` : ""}`);
     });

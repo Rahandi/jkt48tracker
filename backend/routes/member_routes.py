@@ -8,8 +8,12 @@ router = APIRouter(
 )
 
 @router.get("/")
-async def get_members(team: str | None = Query(None), service: MemberService = Depends()):
-  return service.get_all(team=team)
+async def get_members(
+  team: str | None = Query(None),
+  generation: str | None = Query(None),
+  service: MemberService = Depends(),
+):
+  return service.get_all(team=team, generation=generation)
 
 @router.get("/upcoming-birthdays")
 async def upcoming_birthdays(days: int = Query(30, ge=1, le=90), service: MemberService = Depends()):
