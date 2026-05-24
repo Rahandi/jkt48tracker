@@ -133,7 +133,7 @@ function ShowCard({
                     alt={m.name}
                     width={28}
                     height={28}
-                    className="w-7 h-7 rounded-full object-cover object-[center_15%] ring-2 ring-card"
+                    className="w-7 h-7 rounded-full object-cover object-[center_25%] ring-2 ring-card"
                   />
                 ) : (
                   <div
@@ -286,7 +286,7 @@ export default async function HomePage() {
                         alt={m.name}
                         width={36}
                         height={36}
-                        className="w-9 h-9 rounded-full object-cover object-[center_15%] ring-2 ring-background"
+                        className="w-9 h-9 rounded-full object-cover object-[center_25%] ring-2 ring-background"
                       />
                     ))}
                   </div>
@@ -354,7 +354,7 @@ export default async function HomePage() {
                                 alt={m.name}
                                 width={24}
                                 height={24}
-                                className="w-6 h-6 rounded-full object-cover object-[center_15%] ring-1 ring-card"
+                                className="w-6 h-6 rounded-full object-cover object-[center_25%] ring-1 ring-card"
                               />
                             ) : (
                               <div
@@ -412,7 +412,7 @@ export default async function HomePage() {
                       }}
                     >
                       {b.image_url ? (
-                        <Image src={b.image_url} alt={b.name} width={48} height={48} className="w-full h-full object-cover" style={{ clipPath: "circle(50%)" }} />
+                        <Image src={b.image_url} alt={b.name} width={48} height={48} className="w-full h-full object-cover object-[center_25%]" style={{ clipPath: "circle(50%)" }} />
                       ) : (
                         <div className="w-full h-full bg-muted flex items-center justify-center" style={{ clipPath: "circle(50%)" }}>
                           <span className="text-sm font-semibold text-muted-foreground">{b.name[0]}</span>
@@ -472,7 +472,7 @@ export default async function HomePage() {
                             alt={member.name}
                             width={48}
                             height={48}
-                            className="w-full h-full object-cover object-[center_15%]"
+                            className="w-full h-full object-cover object-[center_25%]"
                             style={{ clipPath: "circle(50%)" }}
                           />
                         ) : (
@@ -520,7 +520,7 @@ export default async function HomePage() {
                               alt={member.name}
                               width={48}
                               height={48}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover object-[center_25%]"
                               style={{ clipPath: "circle(50%)" }}
                             />
                           ) : (

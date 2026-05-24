@@ -159,7 +159,7 @@ function ShowRow({
                       alt={m.name}
                       width={28}
                       height={28}
-                      className="w-7 h-7 rounded-full object-cover object-[center_15%] ring-2 ring-card"
+                      className="w-7 h-7 rounded-full object-cover object-[center_25%] ring-2 ring-card"
                     />
                   ) : (
                     <div

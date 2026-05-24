@@ -370,7 +370,7 @@ function ShowRow({ s, memberMap }: { s: Show; memberMap: Map<string, Member> }) 
                   alt={m.name}
                   width={22}
                   height={22}
-                  className="w-5 h-5 rounded-full object-cover object-[center_15%] ring-1 ring-card"
+                  className="w-5 h-5 rounded-full object-cover object-[center_25%] ring-1 ring-card"
                 />
               ) : (
                 <div
