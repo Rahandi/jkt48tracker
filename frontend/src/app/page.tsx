@@ -520,7 +520,7 @@ export default async function HomePage() {
                               alt={member.name}
                               width={48}
                               height={48}
-                              className="w-full h-full object-cover object-[center_15%]"
+                              className="w-full h-full object-cover"
                               style={{ clipPath: "circle(50%)" }}
                             />
                           ) : (
