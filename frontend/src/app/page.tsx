@@ -503,7 +503,7 @@ export default async function HomePage() {
                   </span>
                   <span className="text-xs text-muted-foreground">this week</span>
                 </div>
-                <div className="flex gap-3 overflow-x-auto pb-1 px-2 scrollbar-none">
+                <div className="flex gap-3 overflow-x-auto pt-3 pb-1 px-2 scrollbar-none">
                   {nearingMilestones.map(({ member, milestoneCount, showsAway, showDate }) => (
                       <Link
                         key={member.jkt48_id}
