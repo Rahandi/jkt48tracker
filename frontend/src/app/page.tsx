@@ -530,11 +530,10 @@ export default async function HomePage() {
                           )}
                         </div>
                         <div className="text-center">
-                          <p className="text-[10px] font-medium text-foreground leading-tight truncate w-14">
-                            {member.nickname ?? member.name.split(" ")[0]}
+                          <p className="text-[10px] font-medium text-foreground leading-tight whitespace-nowrap">
+                            {member.nickname ?? member.name.split(" ")[0]} <span className="font-semibold">{milestoneCount}★</span>
                           </p>
-                          <p className="text-[9px] font-semibold mt-0.5 text-foreground">{milestoneCount}★</p>
-                          <p className="text-[9px] text-muted-foreground">
+                          <p className="text-[9px] text-muted-foreground whitespace-nowrap">
                             {showsAway === 1 ? "next show" : `${showsAway} away`} · {showDate.slice(5).replace("-", "/")}
                           </p>
                         </div>
