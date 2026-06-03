@@ -8,8 +8,8 @@ class MemberService:
   def __init__(self, db: Session = Depends(get_session)):
     self.member_repository = MemberRepository(db)
 
-  def get_all(self, team: str | None = None, generation: str | None = None):
-    return self.member_repository.get_all(team=team, generation=generation)
+  def get_all(self, team: str | None = None, generation: str | None = None, include_graduated: bool = False):
+    return self.member_repository.get_all(team=team, generation=generation, include_graduated=include_graduated)
 
   def get_by_id(self, member_id: int):
     return self.member_repository.get_by_id(member_id)
@@ -29,9 +29,18 @@ class MemberService:
   def get_upcoming_birthdays(self, days: int = 30):
     return self.member_repository.get_upcoming_birthdays(days)
 
-  def sync(self, members: list[dict]):
+  def sync(self, members: list[dict], detect_graduations: bool = False) -> dict:
     results = []
     for data in members:
       member = self.member_repository.upsert(data)
       results.append(member)
-    return results
+
+    graduated_count = 0
+    if detect_graduations:
+      incoming_ids = {m["jkt48_id"] for m in members}
+      active_ids = self.member_repository.get_active_jkt48_ids()
+      missing_ids = list(active_ids - incoming_ids)
+      if missing_ids:
+        graduated_count = self.member_repository.mark_graduated(missing_ids)
+
+    return {"synced": len(results), "graduated": graduated_count}

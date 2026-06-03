@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
 from routes.internal.auth import require_api_key
@@ -23,7 +23,10 @@ router = APIRouter(prefix="/members", tags=["internal-members"])
 
 
 @router.post("/sync", dependencies=[Depends(require_api_key)])
-async def sync_members(members: list[MemberSyncItem], service: MemberService = Depends()):
+async def sync_members(
+    members: list[MemberSyncItem],
+    detect_graduations: bool = Query(False),
+    service: MemberService = Depends(),
+):
     data = [m.model_dump(exclude_none=True) for m in members]
-    synced = service.sync(data)
-    return {"synced": len(synced)}
+    return service.sync(data, detect_graduations=detect_graduations)

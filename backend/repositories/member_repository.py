@@ -30,8 +30,10 @@ class MemberRepository:
   def __init__(self, db: Session):
     self.db = db
 
-  def get_all(self, team: str | None = None, generation: str | None = None):
+  def get_all(self, team: str | None = None, generation: str | None = None, include_graduated: bool = False):
     statement = select(Member).where(Member.deleted_at.is_(None))
+    if not include_graduated:
+      statement = statement.where(Member.graduated_at.is_(None))
     if team:
       statement = statement.where(Member.team == team.upper())
     if generation:
@@ -66,6 +68,29 @@ class MemberRepository:
     if existing:
       return self.update(existing.id, data)
     return self.create(data)
+
+  def mark_graduated(self, jkt48_ids: list[str]) -> int:
+    from time import time
+    now = int(time())
+    stmt = (
+      update(Member)
+      .where(
+        Member.jkt48_id.in_(jkt48_ids),
+        Member.deleted_at.is_(None),
+        Member.graduated_at.is_(None),
+      )
+      .values(graduated_at=now)
+    )
+    result = self.db.execute(stmt)
+    self.db.commit()
+    return result.rowcount
+
+  def get_active_jkt48_ids(self) -> set[str]:
+    stmt = select(Member.jkt48_id).where(
+      Member.deleted_at.is_(None),
+      Member.graduated_at.is_(None),
+    )
+    return {row[0] for row in self.db.execute(stmt).all()}
 
   def count_all_shows(self, jkt48_id: str) -> int:
     """Total show count: past performed shows + shadow/untracked entries (null date)."""

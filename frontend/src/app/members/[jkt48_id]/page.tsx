@@ -28,6 +28,7 @@ type Member = {
   twitter: string | null;
   instagram: string | null;
   team: string | null;
+  graduated_at: number | null;
 };
 
 type ScheduleMember = { id: number; name: string; jkt48_id: string | null };
@@ -203,6 +204,11 @@ export default async function MemberPage({
                 <p className="text-muted-foreground mt-1">"{member.nickname}"</p>
               )}
               <div className="flex gap-2 mt-3 flex-wrap items-center">
+                {member.graduated_at && (
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
+                    Graduated {new Date(member.graduated_at * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                )}
                 {member.team && TEAM_LABEL[member.team] && (
                   <span
                     className="text-xs font-semibold px-2.5 py-0.5 rounded-full"

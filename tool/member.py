@@ -172,7 +172,7 @@ async def scrape_member_detail(page: nodriver.Tab, detail_path: str) -> dict:
 
 def sync_to_api(members: list[dict]) -> None:
     response = requests.post(
-        f"{INTERNAL_API_URL}/members/sync",
+        f"{INTERNAL_API_URL}/members/sync?detect_graduations=true",
         json=members,
         headers={"X-API-Key": INTERNAL_API_KEY},
         timeout=30,
@@ -180,6 +180,8 @@ def sync_to_api(members: list[dict]) -> None:
     response.raise_for_status()
     result = response.json()
     print(f"Synced {result['synced']} members to API")
+    if result.get("graduated"):
+        print(f"  ⚠ Marked {result['graduated']} member(s) as graduated (not found on jkt48.com/member)")
 
 
 async def main() -> None:

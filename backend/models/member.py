@@ -19,6 +19,7 @@ class Member(Base):
   instagram = Column(String(100), nullable=True)
   team = Column(String(50), nullable=True)
   generation = Column(String(20), nullable=True)
+  graduated_at = Column(Integer, nullable=True)
 
   def __repr__(self):
     return f"id: {self.id}, name: {self.name}"
