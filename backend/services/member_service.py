@@ -29,6 +29,10 @@ class MemberService:
   def get_upcoming_birthdays(self, days: int = 30):
     return self.member_repository.get_upcoming_birthdays(days)
 
+  # Minimum plausible active-member count — guards against marking everyone
+  # graduated when the scrape returns 0 due to a Cloudflare block or error.
+  _MIN_MEMBERS_FOR_GRADUATION_DETECTION = 10
+
   def sync(self, members: list[dict], detect_graduations: bool = False) -> dict:
     results = []
     for data in members:
@@ -36,7 +40,7 @@ class MemberService:
       results.append(member)
 
     graduated_count = 0
-    if detect_graduations:
+    if detect_graduations and len(members) >= self._MIN_MEMBERS_FOR_GRADUATION_DETECTION:
       incoming_ids = {m["jkt48_id"] for m in members}
       active_ids = self.member_repository.get_active_jkt48_ids()
       missing_ids = list(active_ids - incoming_ids)

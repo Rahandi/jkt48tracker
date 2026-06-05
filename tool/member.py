@@ -65,7 +65,11 @@ def _find_chrome() -> str | None:
 async def _make_browser() -> nodriver.Browser:
     config = nodriver.Config()
     config.sandbox = False
+    config.headless = True
     config.add_argument("--disable-dev-shm-usage")
+    config.add_argument("--disable-gpu")
+    config.add_argument("--no-zygote")
+    config.add_argument("--single-process")
     chrome = _find_chrome()
     if chrome:
         config.browser_executable_path = Path(chrome)  # type: ignore[assignment]
