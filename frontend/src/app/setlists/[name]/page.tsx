@@ -189,7 +189,7 @@ export default async function SetlistDetailPage({
             </h2>
             <Card>
               <CardContent className="py-4 px-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1">
+                <div className="flex flex-col gap-y-1">
                   {mainSongs.map((t, i) => {
                     const idTitle = idTitles[t.name] ?? null;
                     return (
