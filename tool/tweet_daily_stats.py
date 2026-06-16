@@ -110,7 +110,7 @@ def generate_daily_image(
 
         text_y = y + (row_h - 19) // 2
         name_x = col_x + AVATAR_SIZE + 8
-        draw.text((name_x, text_y), m["name"], font=font_name, fill=name_color)
+        draw.text((name_x, text_y), m.get("nickname") or m["name"], font=font_name, fill=name_color)
 
         # Stat: "(+N) total" for members who performed today, else just "total"
         stat = f"(+{today_n}) {total_n}" if today_n > 0 else f"{total_n}"

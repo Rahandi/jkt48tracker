@@ -297,15 +297,17 @@ class TheaterScheduleRepository:
       select(
         func.max(TheaterScheduleMember.jkt48_id).label("jkt48_id"),
         func.max(TheaterScheduleMember.name).label("name"),
+        func.max(Member.nickname).label("nickname"),
         func.count(distinct(TheaterScheduleMember.theater_schedule_id)).label("show_count"),
       )
       .join(TheaterSchedule, TheaterSchedule.id == TheaterScheduleMember.theater_schedule_id)
+      .outerjoin(Member, Member.jkt48_id == TheaterScheduleMember.jkt48_id)
       .where(*filters)
       .group_by(group_key)
       .order_by(func.count(distinct(TheaterScheduleMember.theater_schedule_id)).desc())
     )
     return [
-      {"jkt48_id": r.jkt48_id, "name": r.name, "show_count": r.show_count}
+      {"jkt48_id": r.jkt48_id, "name": r.name, "nickname": r.nickname, "show_count": r.show_count}
       for r in self.db.execute(stmt).all()
     ]
 
