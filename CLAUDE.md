@@ -1,6 +1,15 @@
 # JKT48 Tracker — Claude Context
 
-Fan-built site tracking all JKT48 theater shows, member stats, and schedules since 2011.
+Fan-built archive of all JKT48 theater shows, member stats, and schedules since 2011.
+
+> **Status (2026-11): static archive.** The site is a Next.js static export hosted on GitHub Pages, built in CI from the committed DB dump (`data/jkt48tracker-data-*.sql.gz`). The old server deploy (GCP, later "boreas") is retired, `deploy.yml` is manual-only, and scraping is dead (jkt48.com blocks the server IP). The sections below on production deployment, tool scripts and Twitter automation describe the legacy setup.
+
+## Static site build
+
+- `.github/workflows/pages.yml` (on push to main): loads the dump into SQLite via `tool/load_dump.py`, runs the FastAPI backend, runs `frontend/scripts/build-data.mjs` (writes `public/data/*.json`), then `npm run build` (`output: "export"`).
+- Avatars live in `frontend/public/avatars`; the workflow rewrites `members.image_url` to them. Repo variable `PAGES_BASE_PATH` sets the base path (empty with a custom domain).
+- Filters/pagination on members, theater and setlist pages run client-side (`useSearchParams`) over the JSON data.
+- Local build: start backend on :8000 with the loaded SQLite DB, then `cd frontend && node scripts/build-data.mjs && npm run build`.
 
 ## Stack
 
