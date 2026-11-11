@@ -8,9 +8,9 @@ type TracklistData = Record<string, { wiki_page: string; songs: { track: string;
 type LyricsData = Record<string, { source: string; lyrics: string }>;
 
 async function getSetlistCounts(): Promise<Record<string, number>> {
-  if (!process.env.BACKEND_URL) return {};
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return {};
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/theater-schedules/stats/setlists`,
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/theater-schedules/stats/setlists`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return {};
@@ -45,6 +45,19 @@ function getSongAppearances(songName: string, counts: Record<string, number>): A
   }
 
   return appearances.sort((a, b) => b.showCount - a.showCount);
+}
+
+export async function generateStaticParams() {
+  const res = await fetch(`${(process.env.BACKEND_URL || "http://localhost:8000")}/api/theater-schedules/stats/setlists`);
+  const all: { setlist_name: string }[] = res.ok ? await res.json() : [];
+  const data = tracklists as TracklistData;
+  const names = new Set<string>();
+  for (const { setlist_name } of all) {
+    for (const song of data[setlist_name]?.songs ?? []) {
+      if (!song.name.toLowerCase().includes("overture")) names.add(song.name);
+    }
+  }
+  return [...names].map((name) => ({ name }));
 }
 
 export default async function SongDetailPage({

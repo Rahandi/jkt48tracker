@@ -1,4 +1,3 @@
-export const dynamic = "force-dynamic";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -42,8 +41,8 @@ type TheaterSchedule = {
 type MemberStat = { jkt48_id: string | null; name: string; show_count: number };
 
 async function getMembers(): Promise<Member[]> {
-  if (!process.env.BACKEND_URL) return [];
-  const res = await fetch(`${process.env.BACKEND_URL}/api/members/`, {
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return [];
+  const res = await fetch(`${(process.env.BACKEND_URL || "http://localhost:8000")}/api/members/`, {
     next: { revalidate: 3600 },
   });
   if (!res.ok) return [];
@@ -54,21 +53,21 @@ async function getSchedules(
   filter: "upcoming" | "past" | "ongoing",
   limit?: number
 ): Promise<TheaterSchedule[]> {
-  if (!process.env.BACKEND_URL) return [];
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return [];
   const params = new URLSearchParams({ [`${filter}`]: "true" });
   if (limit) params.set("limit", String(limit));
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/theater-schedules/?${params}`,
-    { cache: "no-store" }
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/theater-schedules/?${params}`,
+    { cache: "force-cache" }
   );
   if (!res.ok) return [];
   return res.json();
 }
 
 async function getShowsByYear(): Promise<{ year: number; count: number }[]> {
-  if (!process.env.BACKEND_URL) return [];
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return [];
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/theater-schedules/stats/by-year`,
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/theater-schedules/stats/by-year`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return [];
@@ -76,9 +75,9 @@ async function getShowsByYear(): Promise<{ year: number; count: number }[]> {
 }
 
 async function getMemberStats(): Promise<MemberStat[]> {
-  if (!process.env.BACKEND_URL) return [];
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return [];
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/theater-schedules/member-stats`,
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/theater-schedules/member-stats`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return [];
@@ -86,9 +85,9 @@ async function getMemberStats(): Promise<MemberStat[]> {
 }
 
 async function getUpcomingBirthdays(): Promise<UpcomingBirthday[]> {
-  if (!process.env.BACKEND_URL) return [];
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return [];
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/members/upcoming-birthdays?days=30`,
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/members/upcoming-birthdays?days=30`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return [];

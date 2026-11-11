@@ -1,14 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { cookies } from "next/headers";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
 import { getTeamColor, TEAM_COLORS } from "@/lib/teamColors";
 import { isAtMilestone } from "@/lib/milestones";
-import { ContributeShowMembers } from "@/components/theater/ContributeShowMembers";
-import { ContributeShowInfo } from "@/components/theater/ContributeShowInfo";
-import { ShareShowButton } from "@/components/theater/ShareShowButton";
 
 const TEAM_LABEL: Record<string, string> = {
   LOVE: "Team Love",
@@ -48,9 +44,9 @@ type Adjacent = {
 };
 
 async function getSchedule(id: string): Promise<TheaterSchedule | null> {
-  if (!process.env.BACKEND_URL) return null;
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return null;
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/theater-schedules/${id}`,
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/theater-schedules/${id}`,
     { next: { revalidate: 3600 } }
   );
   if (res.status === 404) return null;
@@ -59,9 +55,9 @@ async function getSchedule(id: string): Promise<TheaterSchedule | null> {
 }
 
 async function getAdjacent(id: string): Promise<Adjacent> {
-  if (!process.env.BACKEND_URL) return { prev: null, next: null };
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return { prev: null, next: null };
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/theater-schedules/${id}/adjacent`,
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/theater-schedules/${id}/adjacent`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return { prev: null, next: null };
@@ -69,8 +65,8 @@ async function getAdjacent(id: string): Promise<Adjacent> {
 }
 
 async function getMembers(): Promise<Member[]> {
-  if (!process.env.BACKEND_URL) return [];
-  const res = await fetch(`${process.env.BACKEND_URL}/api/members/`, {
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return [];
+  const res = await fetch(`${(process.env.BACKEND_URL || "http://localhost:8000")}/api/members/`, {
     next: { revalidate: 3600 },
   });
   if (!res.ok) return [];
@@ -78,13 +74,24 @@ async function getMembers(): Promise<Member[]> {
 }
 
 async function getMemberStats(): Promise<MemberStat[]> {
-  if (!process.env.BACKEND_URL) return [];
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return [];
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/theater-schedules/member-stats`,
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/theater-schedules/member-stats`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return [];
   return res.json();
+}
+
+export async function generateStaticParams() {
+  const kinds = ["past=true", "upcoming=true", "ongoing=true"];
+  const lists = await Promise.all(
+    kinds.map(async (k) => {
+      const res = await fetch(`${(process.env.BACKEND_URL || "http://localhost:8000")}/api/theater-schedules/?${k}`);
+      return res.ok ? ((await res.json()) as { id: number }[]) : [];
+    })
+  );
+  return [...new Set(lists.flat().map((s) => s.id))].map((id) => ({ id: String(id) }));
 }
 
 export default async function TheaterShowPage({
@@ -93,8 +100,6 @@ export default async function TheaterShowPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const cookieStore = await cookies();
-  const isAdmin = !!cookieStore.get("admin_key")?.value;
   const [schedule, adjacent, members, memberStats] = await Promise.all([
     getSchedule(id),
     getAdjacent(id),
@@ -192,9 +197,6 @@ export default async function TheaterShowPage({
                 </span>
               </div>
             )}
-            <div className="mt-3">
-              <ContributeShowInfo jkt48ScheduleId={schedule.jkt48_schedule_id} />
-            </div>
           </div>
 
           <div className="flex flex-col items-end gap-3 shrink-0">
@@ -221,16 +223,6 @@ export default async function TheaterShowPage({
                 >
                   View Setlist →
                 </Link>
-              )}
-              {isAdmin && (
-                <ShareShowButton
-                  showId={schedule.id}
-                  setlistName={schedule.setlist_name}
-                  showDate={schedule.show_date}
-                  showTime={schedule.show_time}
-                  members={schedule.members}
-                  memberStats={memberStats}
-                />
               )}
             </div>
           </div>
@@ -295,10 +287,7 @@ export default async function TheaterShowPage({
           </h2>
 
           {schedule.members.length === 0 ? (
-            <div>
-              <p className="text-muted-foreground text-sm">Member list not available for this show.</p>
-              <ContributeShowMembers jkt48ScheduleId={schedule.jkt48_schedule_id} />
-            </div>
+            <p className="text-muted-foreground text-sm">Member list not available for this show.</p>
           ) : (
             <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
               {schedule.members.map((m) => {

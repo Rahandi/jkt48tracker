@@ -1,8 +1,12 @@
 name: Build & Deploy
 
+# Automatic deploys are disabled: the site is moving to a static archive on GitHub Pages.
+# To re-enable, restore the `push` trigger below.
+# on:
+#   push:
+#     branches: [main]
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
