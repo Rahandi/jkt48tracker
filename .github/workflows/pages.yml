@@ -31,11 +31,21 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Load data dump into SQLite and start backend
+        env:
+          PAGES_BASE_PATH: ${{ vars.PAGES_BASE_PATH }}
         run: |
           pip install -r backend/requirements.txt
           mkdir run && cd run
           DUMP=$(ls ../data/jkt48tracker-data-*.sql.gz | sort | tail -1)
           PYTHONPATH=../backend python ../tool/load_dump.py "$DUMP"
+          # Serve avatars from the repo (jkt48.com images are blocked/hotlink-protected)
+          python - <<'PY'
+          import sqlite3, os
+          base = os.environ.get("PAGES_BASE_PATH", "")
+          c = sqlite3.connect("jkt48tracker.db")
+          c.execute("UPDATE members SET image_url = ? || '/avatars/' || replace(image_url, 'https://jkt48.com/api/v1/storages/media/jkt48-member/', '') WHERE image_url LIKE 'https://jkt48.com/api/v1/storages/media/jkt48-member/%'", (base,))
+          c.commit()
+          PY
           PYTHONPATH=../backend nohup uvicorn main:app --app-dir ../backend --port 8000 > ../backend.log 2>&1 &
           for i in $(seq 1 30); do curl -sf localhost:8000/api/members/ >/dev/null && break; sleep 1; done
 
