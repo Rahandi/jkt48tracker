@@ -1,0 +1,66 @@
+name: Deploy static site to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Load data dump into SQLite and start backend
+        run: |
+          pip install -r backend/requirements.txt
+          mkdir run && cd run
+          DUMP=$(ls ../data/jkt48tracker-data-*.sql.gz | sort | tail -1)
+          PYTHONPATH=../backend python ../tool/load_dump.py "$DUMP"
+          PYTHONPATH=../backend nohup uvicorn main:app --app-dir ../backend --port 8000 > ../backend.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf localhost:8000/api/members/ >/dev/null && break; sleep 1; done
+
+      - name: Build static site
+        working-directory: frontend
+        env:
+          BACKEND_URL: http://localhost:8000
+          # Set to "/<repo>" if not using a custom domain
+          NEXT_PUBLIC_BASE_PATH: ${{ vars.PAGES_BASE_PATH }}
+        run: |
+          npm ci
+          node scripts/build-data.mjs
+          npm run build
+          touch out/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

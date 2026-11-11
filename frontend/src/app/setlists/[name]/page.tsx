@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
+import { PastShows, ShowRow, type SlimShow as SlimShowT } from "@/components/setlists/PastShows";
 import { getTeamColor, TEAM_COLORS } from "@/lib/teamColors";
 import tracklists from "@/data/setlist-tracklists.json";
 import idTitlesRaw from "@/data/song-id-titles.json";
+
+const BACKEND = process.env.BACKEND_URL || "http://localhost:8000";
 
 const TEAM_LABEL: Record<string, string> = {
   LOVE: "Team Love",
@@ -14,8 +16,6 @@ const TEAM_LABEL: Record<string, string> = {
   TRAINEE: "Trainee",
   JKT48_VIRTUAL: "Virtual",
 };
-
-const PER_PAGE = 50;
 
 type ScheduleMember = { id: number; name: string; jkt48_id: string | null };
 
@@ -45,9 +45,8 @@ type Setlist = {
 };
 
 async function getSetlistInfo(name: string): Promise<Setlist | null> {
-  if (!process.env.BACKEND_URL) return null;
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/theater-schedules/stats/setlists`,
+    `${BACKEND}/api/theater-schedules/stats/setlists`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return null;
@@ -55,16 +54,13 @@ async function getSetlistInfo(name: string): Promise<Setlist | null> {
   return all.find((s) => s.setlist_name === name) ?? null;
 }
 
-async function getShows(name: string, offset = 0): Promise<Show[]> {
-  if (!process.env.BACKEND_URL) return [];
+async function getShows(name: string): Promise<Show[]> {
   const params = new URLSearchParams({
     setlist_name: name,
     past: "true",
-    limit: String(PER_PAGE),
-    offset: String(offset),
   });
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/theater-schedules/?${params}`,
+    `${BACKEND}/api/theater-schedules/?${params}`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return [];
@@ -72,10 +68,9 @@ async function getShows(name: string, offset = 0): Promise<Show[]> {
 }
 
 async function getUpcomingShows(name: string): Promise<Show[]> {
-  if (!process.env.BACKEND_URL) return [];
   const params = new URLSearchParams({ setlist_name: name, upcoming: "true" });
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/theater-schedules/?${params}`,
+    `${BACKEND}/api/theater-schedules/?${params}`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return [];
@@ -83,8 +78,7 @@ async function getUpcomingShows(name: string): Promise<Show[]> {
 }
 
 async function getMembers(): Promise<Member[]> {
-  if (!process.env.BACKEND_URL) return [];
-  const res = await fetch(`${process.env.BACKEND_URL}/api/members/`, {
+  const res = await fetch(`${BACKEND}/api/members/`, {
     next: { revalidate: 3600 },
   });
   if (!res.ok) return [];
@@ -113,22 +107,23 @@ function deriveTeamCounts(shows: Show[], memberMap: Map<string, Member>) {
   return Object.entries(counts).sort(([, a], [, b]) => b - a);
 }
 
+export async function generateStaticParams() {
+  const res = await fetch(`${BACKEND}/api/theater-schedules/stats/setlists`);
+  const all: Setlist[] = res.ok ? await res.json() : [];
+  return all.map((x) => ({ name: x.setlist_name }));
+}
+
 export default async function SetlistDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ name: string }>;
-  searchParams: Promise<{ page?: string }>;
 }) {
   const { name: encodedName } = await params;
-  const { page: pageStr = "1" } = await searchParams;
   const name = decodeURIComponent(encodedName);
-  const page = Math.max(1, parseInt(pageStr) || 1);
-  const offset = (page - 1) * PER_PAGE;
 
   const [info, shows, upcomingShows, members] = await Promise.all([
     getSetlistInfo(name),
-    getShows(name, offset),
+    getShows(name),
     getUpcomingShows(name),
     getMembers(),
   ]);
@@ -137,7 +132,6 @@ export default async function SetlistDetailPage({
 
   const memberMap = new Map(members.map((m) => [m.jkt48_id, m]));
   const teamEntries = deriveTeamCounts(shows, memberMap);
-  const totalPages = Math.ceil(info.count / PER_PAGE);
   const rawTracklist = getTracklist(name);
   const tracklist = rawTracklist?.filter(
     (t) => !t.name.toLowerCase().includes("overture") && t.track !== "M00"
@@ -145,12 +139,19 @@ export default async function SetlistDetailPage({
   const mainSongs = tracklist?.filter((t) => t.track.startsWith("M")) ?? [];
   const encoreSongs = tracklist?.filter((t) => t.track.startsWith("EN")) ?? [];
 
-  // group past shows by year
-  const byYear = shows.reduce<Record<string, Show[]>>((acc, s) => {
-    const y = s.show_date ? s.show_date.slice(0, 4) : "Unknown";
-    (acc[y] ??= []).push(s);
-    return acc;
-  }, {});
+  const slim = (x: Show): SlimShowT => ({
+    id: x.id,
+    show_date: x.show_date,
+    show_time: x.show_time,
+    member_count: x.member_count,
+    seitansai_members: x.seitansai_members,
+    members: x.members.slice(0, 12).map((m) => ({
+      name: m.name,
+      image_url: (m.jkt48_id && memberMap.get(m.jkt48_id)?.image_url) || null,
+    })),
+  });
+  const slimPast = shows.map(slim);
+  const slimUpcoming = upcomingShows.map(slim);
 
   return (
     <div className="min-h-screen">
@@ -266,130 +267,21 @@ export default async function SetlistDetailPage({
         )}
 
         {/* Upcoming shows */}
-        {upcomingShows.length > 0 && (
+        {slimUpcoming.length > 0 && (
           <div className="mb-8">
             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
               Upcoming
             </h2>
             <div className="flex flex-col gap-2">
-              {upcomingShows.map((s) => (
-                <ShowRow key={s.id} s={s} memberMap={memberMap} />
+              {slimUpcoming.map((s) => (
+                <ShowRow key={s.id} s={s} />
               ))}
             </div>
           </div>
         )}
 
-        {/* Past shows grouped by year */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              All Performances
-            </h2>
-            <span className="text-xs text-muted-foreground">
-              {offset + 1}–{Math.min(offset + PER_PAGE, info.count)} of {info.count}
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-6">
-            {Object.entries(byYear)
-              .sort(([a], [b]) => Number(b) - Number(a))
-              .map(([year, yearShows]) => (
-                <div key={year}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="text-xs font-bold text-primary uppercase tracking-widest">
-                      {year}
-                    </span>
-                    <span className="flex-1 h-px bg-border" />
-                    <span className="text-xs text-muted-foreground">{yearShows.length} shows</span>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    {yearShows.map((s) => (
-                      <ShowRow key={s.id} s={s} memberMap={memberMap} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-8">
-              {page > 1 && (
-                <Link
-                  href={`/setlists/${encodedName}?page=${page - 1}`}
-                  className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm hover:bg-secondary/70 transition-colors"
-                >
-                  ← Prev
-                </Link>
-              )}
-              <span className="text-sm text-muted-foreground px-3">
-                Page {page} of {totalPages}
-              </span>
-              {page < totalPages && (
-                <Link
-                  href={`/setlists/${encodedName}?page=${page + 1}`}
-                  className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground text-sm hover:bg-secondary/70 transition-colors"
-                >
-                  Next →
-                </Link>
-              )}
-            </div>
-          )}
-        </div>
+        <PastShows shows={slimPast} encodedName={encodedName} total={info.count} />
       </main>
     </div>
-  );
-}
-
-function ShowRow({ s, memberMap }: { s: Show; memberMap: Map<string, Member> }) {
-  return (
-    <Link
-      href={`/theater/${s.id}`}
-      className="flex items-center gap-4 px-4 py-3 rounded-xl bg-card ring-1 ring-border hover:ring-primary/60 transition-all duration-200"
-    >
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className="text-sm text-foreground font-medium">
-            {s.show_date ? formatDate(s.show_date) : "Date TBA"}
-            {s.show_time && (
-              <span className="text-muted-foreground ml-2">· {s.show_time} WIB</span>
-            )}
-          </p>
-          {s.seitansai_members && (
-            <span className="text-xs">🎂 {s.seitansai_members}</span>
-          )}
-        </div>
-        {s.members.length > 0 && (
-          <div className="flex -space-x-1.5 mt-2">
-            {s.members.slice(0, 12).map((m, i) => {
-              const info = m.jkt48_id ? memberMap.get(m.jkt48_id) : undefined;
-              return info?.image_url ? (
-                <Image
-                  key={i}
-                  src={info.image_url}
-                  alt={m.name}
-                  width={22}
-                  height={22}
-                  className="w-5 h-5 rounded-full object-cover object-[center_25%] ring-1 ring-card"
-                />
-              ) : (
-                <div
-                  key={i}
-                  className="w-5 h-5 rounded-full bg-muted ring-1 ring-card flex items-center justify-center shrink-0"
-                >
-                  <span className="text-[7px] text-muted-foreground">{m.name[0]}</span>
-                </div>
-              );
-            })}
-            {s.member_count > 12 && (
-              <span className="text-[10px] text-muted-foreground ml-2 self-center">
-                +{s.member_count - 12}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-      <span className="text-muted-foreground text-sm shrink-0">→</span>
-    </Link>
   );
 }

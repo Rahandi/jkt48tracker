@@ -12,7 +12,6 @@ export function AppHeader() {
     { href: "/theater", label: "Theater" },
     { href: "/setlists", label: "Setlists" },
     { href: "/songs", label: "Songs" },
-    { href: "/contribute", label: "Contribute" },
   ];
 
   return (

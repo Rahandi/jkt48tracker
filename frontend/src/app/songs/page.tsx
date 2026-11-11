@@ -1,4 +1,3 @@
-export const dynamic = "force-dynamic";
 
 import { SongList, type SongEntry } from "@/components/songs/SongList";
 import tracklists from "@/data/setlist-tracklists.json";
@@ -7,9 +6,9 @@ import idTitlesRaw from "@/data/song-id-titles.json";
 type TracklistData = Record<string, { wiki_page: string; songs: { track: string; name: string }[] }>;
 
 async function getSetlistCounts(): Promise<Record<string, number>> {
-  if (!process.env.BACKEND_URL) return {};
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return {};
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/theater-schedules/stats/setlists`,
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/theater-schedules/stats/setlists`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return {};

@@ -42,9 +42,9 @@ type TheaterSchedule = {
 };
 
 async function getMember(jkt48_id: string): Promise<Member | null> {
-  if (!process.env.BACKEND_URL) return null;
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return null;
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/members/${jkt48_id}`,
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/members/${jkt48_id}`,
     { next: { revalidate: 3600 } }
   );
   if (res.status === 404) return null;
@@ -57,9 +57,9 @@ type TheaterStats = { total: number; tracked: number; by_year: { year: number; c
 type RecentShow = { id: number; show_date: string | null; show_time: string | null; setlist_name: string | null };
 
 async function getUpcomingSchedules(): Promise<TheaterSchedule[]> {
-  if (!process.env.BACKEND_URL) return [];
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return [];
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/theater-schedules/?upcoming=true`,
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/theater-schedules/?upcoming=true`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return [];
@@ -67,9 +67,9 @@ async function getUpcomingSchedules(): Promise<TheaterSchedule[]> {
 }
 
 async function getMemberTheaterStats(jkt48_id: string): Promise<TheaterStats> {
-  if (!process.env.BACKEND_URL) return { total: 0, tracked: 0, by_year: [] };
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return { total: 0, tracked: 0, by_year: [] };
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/members/${jkt48_id}/theater-stats`,
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/members/${jkt48_id}/theater-stats`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return { total: 0, tracked: 0, by_year: [] };
@@ -77,9 +77,9 @@ async function getMemberTheaterStats(jkt48_id: string): Promise<TheaterStats> {
 }
 
 async function getRecentShows(jkt48_id: string): Promise<RecentShow[]> {
-  if (!process.env.BACKEND_URL) return [];
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return [];
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/members/${jkt48_id}/shows?limit=10`,
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/members/${jkt48_id}/shows?limit=10`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return [];
@@ -88,9 +88,9 @@ async function getRecentShows(jkt48_id: string): Promise<RecentShow[]> {
 
 type MemberStat = { jkt48_id: string | null; name: string; show_count: number };
 async function getMemberStats(): Promise<MemberStat[]> {
-  if (!process.env.BACKEND_URL) return [];
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return [];
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/theater-schedules/member-stats`,
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/theater-schedules/member-stats`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return [];
@@ -126,6 +126,12 @@ function StatRow({ label, value }: StatRowProps) {
       <span className="text-foreground text-sm">{value ?? "—"}</span>
     </div>
   );
+}
+
+export async function generateStaticParams() {
+  const res = await fetch(`${(process.env.BACKEND_URL || "http://localhost:8000")}/api/members/?include_graduated=true`);
+  const all: { jkt48_id: string }[] = res.ok ? await res.json() : [];
+  return all.map((m) => ({ jkt48_id: m.jkt48_id }));
 }
 
 export default async function MemberPage({
@@ -300,17 +306,11 @@ export default async function MemberPage({
             <ShowsByYearChart data={theaterStats.by_year} />
             {theaterStats.total > theaterStats.tracked ? (
               <p className="text-xs text-muted-foreground mt-2">
-                * {theaterStats.total - theaterStats.tracked} untracked shows are not reflected in the chart.{" "}
-                <a href="/contribute" className="underline underline-offset-2 hover:text-foreground transition-colors">
-                  Help complete the data.
-                </a>
+                * {theaterStats.total - theaterStats.tracked} untracked shows are not reflected in the chart.
               </p>
             ) : (
               <p className="text-xs text-muted-foreground mt-2">
-                * Some older shows are missing member records and are not counted here.{" "}
-                <a href="/contribute" className="underline underline-offset-2 hover:text-foreground transition-colors">
-                  Help complete the data.
-                </a>
+                * Some older shows are missing member records and are not counted here.
               </p>
             )}
           </div>

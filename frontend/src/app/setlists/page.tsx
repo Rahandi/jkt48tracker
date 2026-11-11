@@ -1,11 +1,10 @@
-export const dynamic = "force-dynamic";
 
 import { SetlistList } from "@/components/setlists/SetlistList";
 
 async function getSetlists(): Promise<{ setlist_name: string; count: number; first_date: string | null; last_date: string | null }[]> {
-  if (!process.env.BACKEND_URL) return [];
+  if (!(process.env.BACKEND_URL || "http://localhost:8000")) return [];
   const res = await fetch(
-    `${process.env.BACKEND_URL}/api/theater-schedules/stats/setlists`,
+    `${(process.env.BACKEND_URL || "http://localhost:8000")}/api/theater-schedules/stats/setlists`,
     { next: { revalidate: 3600 } }
   );
   if (!res.ok) return [];

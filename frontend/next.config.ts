@@ -1,15 +1,14 @@
 import type { NextConfig } from "next";
 
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
 const nextConfig: NextConfig = {
-  output: "standalone",
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "jkt48.com",
-      },
-    ],
-  },
+  output: "export",
+  trailingSlash: true,
+  basePath,
+  images: { unoptimized: true },
+  staticPageGenerationTimeout: 180,
+  experimental: { staticGenerationMaxConcurrency: 2 },
 };
 
 export default nextConfig;
